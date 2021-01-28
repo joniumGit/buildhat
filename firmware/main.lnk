@@ -1,0 +1,30 @@
+MEMORY {
+  flash(rx)  : ORIGIN = 0x00000000, LENGTH = 1024K
+  sram (rwx) : ORIGIN = 0x20040000, LENGTH =   64K
+  }
+
+ENTRY(_start)
+
+SECTIONS {
+  .text : {
+    *(.text*)
+    . = ALIGN(4);
+    *(.rodata*)
+    . = ALIGN(4);
+    } > flash
+  _idata = .;
+  .data  : AT ( _idata) {
+    . = ALIGN(4);
+    _data_start = .;
+    *(.data*)
+    . = ALIGN(4);
+    _data_end = .;
+    } > sram
+  .bss  : {
+    . = ALIGN(4);
+    _bss_start = .;
+    *(.bss*)
+    . = ALIGN(4);
+    _bss_end = .;
+    } > sram
+  }
