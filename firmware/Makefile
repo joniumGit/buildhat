@@ -2,7 +2,8 @@ COPTS:=-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-preci
 
 .PHONY: reset
 
-all: up
+all: upbl upload
+
 up: main.bin Makefile
 	./flash.sh
 
@@ -12,18 +13,8 @@ upbl: bhbl.bin Makefile
 reset:
 	./reset.sh
 
-# bhbl.bin: bhbl Makefile
-# 	arm-none-eabi-objcopy -O binary bhbl bhbl.bin
-#
-# bhbl.hex: bhbl Makefile
-# 	arm-none-eabi-objcopy -O ihex bhbl bhbl.hex
-#
-# bhbl: bhbl-startup.s bhbl.c Makefile bhbl.lnk
-# 	arm-none-eabi-gcc $(COPTS) -nostartfiles -Xlinker -i bhbl-startup.s bhbl.c -o bhbl.o
-# 	arm-none-eabi-ld  $(LOPTS) -T bhbl.lnk bhbl.o -o bhbl
-# 	arm-none-eabi-objdump -D bhbl >bhbl.dump
-
-
+upload: upload.c
+	gcc upload.c -o upload
 
 %.bin: % Makefile
 	arm-none-eabi-objcopy -O binary $< $@
