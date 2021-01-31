@@ -135,7 +135,6 @@ static int cmd_verify() {
   }
 
 static int cmd_reboot() {
-  int i;
   if(cmd_verify()) return 1;
   ostrnl("Rebooting...");
   wait_ticks(100);
