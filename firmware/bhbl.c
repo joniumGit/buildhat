@@ -8,6 +8,8 @@
 #include "hardware.h"
 #include "control.h"
 
+extern void reboot();
+
 void port_uart_irq() { }
 
 #define TIMEOUT 1000                             // in milliseconds
@@ -38,11 +40,11 @@ void init_timer() {
   nvic_intena(TIM7_IRQn);                        // enable TIM7 interrupt
   }
 
-//// wait for a time period between n-1 and n ticks, n>0
-//static void wait_ticks(unsigned int n) {
-//  n+=tick;
-//  while(tick!=n) __WFI();
-//  }
+// wait for a time period between n-1 and n ticks, n>0
+static void wait_ticks(unsigned int n) {
+  n+=tick;
+  while(tick!=n) __WFI();
+  }
 
 static void reset_timeout() { tick0=tick; }
 static int timeout() { return (int)(tick-tick0)>TIMEOUT; }
@@ -133,8 +135,12 @@ static int cmd_verify() {
   }
 
 static int cmd_reboot() {
+  int i;
   if(cmd_verify()) return 1;
   ostrnl("Rebooting...");
+  wait_ticks(100);
+  deinit_sys();
+  reboot();
   return 0;
   }
 
@@ -165,6 +171,7 @@ int main() {
   init_data_bss();
   init_sys();
   init_gpio();
+  init_timer();
   init_control();
   for(;;)
     proc_ctrl();

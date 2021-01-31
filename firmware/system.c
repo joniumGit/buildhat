@@ -16,6 +16,28 @@ void nvic_intena(int n) {                          // enable interrupt n in NVIC
   NVIC->ISER[n/32]=1<<(n%32);
   }
 
+// switch back from PLL to HSI clock, disable all interrupts
+void deinit_sys() {
+  int i;
+  for(i=0;i<8;i++) {                               // disable all interrupts
+    NVIC->ICER[i]=0xffffffff;
+    NVIC->ICPR[i]=0xffffffff;
+    }
+  for(i=0;i<240;i++)                               // reset all priorities
+    NVIC->IP[i]=0;
+  RCC->CFGR&=~3;                                   // switch to HSI clock
+  while((RCC->CFGR&0x0c)!=0) ;                     // wait for switch to happen
+  RCC->CR=0x81;                                    // PLL off, only HSI on
+  RCC->CFGR=0x0;                                   // reset value
+  RCC->PLLCFGR=0x24003010;                         // reset value
+  FLASH->ACR=0x0;                                  // reset value: caches disabled
+  FLASH->ACR=0x18000;                              // reset caches
+  FLASH->ACR=0x0;
+  __DMB();
+  }
+
+
+
 // C startup code to clear BSS section and initialise DATA section
 // the linker script ensures everything is aligned to 4-byte boundaries
 extern unsigned int _bss_start,_bss_end,_data_start,_data_end,_idata;

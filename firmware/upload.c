@@ -142,6 +142,7 @@ int main(int ac,char**av) {
   for(i=0;i<image_size;i++) och(imagebuf[i]);
   ostr("\x03\r");
   if(!getprompt()) goto ew0;
+  ostr("reboot\r");
 
   return 0;
 
