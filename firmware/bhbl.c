@@ -66,13 +66,15 @@ unsigned int checksum(unsigned char*p,int l) {
   }
 
 static void cmd_help() {
+  ostrnl(BLVERSION);
   ostrnl("Commands available:");
-  ostrnl("  help, ?            : display this text");
-  ostrnl("  load <length>      : initiate upload");
-  ostrnl("                       followed by <STX><<length> data bytes><ETX>");
-  ostrnl("  clear              : clear any uploaded image");
-  ostrnl("  verify             : verify upload");
-  ostrnl("  reboot             : reboot if upload successfully verified");
+  ostrnl("  help, ?                  : display this text");
+  ostrnl("  version                  : display version string");
+  ostrnl("  load <length> <checksum> : initiate upload");
+  ostrnl("                             followed by <STX><<length> data bytes><ETX>");
+  ostrnl("  clear                    : clear any uploaded image");
+  ostrnl("  verify                   : verify upload");
+  ostrnl("  reboot                   : reboot if upload successfully verified");
   }
 
 static int cmd_load() {
@@ -143,6 +145,8 @@ static int cmd_reboot() {
   return 0;
   }
 
+static int cmd_version() { ostrnl(BLVERSION); return 0; }
+
 void cmd_prompt() { ostr("BHBL> "); }
 
 void proc_cmd() {
@@ -156,6 +160,7 @@ void proc_cmd() {
     else if(strmatch("clear"  )) { if(cmd_clear())   goto err; }
     else if(strmatch("verify" )) { if(cmd_verify())  goto err; }
     else if(strmatch("reboot" )) { if(cmd_reboot())  goto err; }
+    else if(strmatch("version")) { if(cmd_version()) goto err; }
     else goto err;
     }
 err:

@@ -4,6 +4,8 @@
 
 #define ARM_MATH_CM4 1
 
+#define BLVERSION "BuildHAT bootloader version 1.0"
+
 typedef unsigned char UC;
 typedef unsigned int UI;
 

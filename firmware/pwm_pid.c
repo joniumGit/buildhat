@@ -83,6 +83,7 @@ case WAVE_TRI:
     return;
     }
 // here we are in PID controller mode: first extract the process variable
+  if(p->pvport<0||p->pvport>=NPORTS) return;
   dvp=devinfo +p->pvport;
   if(!dvp->modedatavalid[p->pvmode]) return;       // no valid process variable? do nothing
   u=0;

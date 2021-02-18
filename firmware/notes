@@ -1,0 +1,18 @@
+To flash bootloader:
+
+  make bhbl.bin
+  ./flash-bl.sh
+
+To build main code:
+
+  make main.bin
+
+To upload code to HAT running bootloader:
+
+  make upload
+  ./upload /dev/ttyUSB0 main.bin   # change serial device as required
+
+Interactive session with bootloader or main code:
+
+  picocom -b3000000 /dev/ttyUSB0   # change serial device as required
+

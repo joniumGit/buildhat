@@ -51,6 +51,7 @@ void init_ports() {
   struct porthw*p;
   RCC->APB1ENR|=APB1CLOCKS_P;
   RCC->APB2ENR|=APB2CLOCKS_P;
+  memset(portinfo,0,sizeof(portinfo));
   gpio_out0(GPIOC,5);
   for(i=0;i<NPORTS;i++) {
     mqhead[i]=mqtail[i]=0;
