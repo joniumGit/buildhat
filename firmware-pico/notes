@@ -1,0 +1,33 @@
+RP2040 Pin allocation
+GPIO  Block     Use
+  0   UART0     Main UART to Pi TX
+  1   UART0     Main UART to Pi RX
+  2   UART0     Main UART to Pi CTS
+  3   UART0     Main UART to Pi RTS
+  4   PIO       Port2 RX
+  5   PIO       Port2 TX
+  6   PIO       Port2 RS485TXRX
+  7   PIO       Port2 RS485TXEnable
+  8   IIC0      SDA0 PORTS 1,2 and Accelerometer
+  9   IIC0      SCL0
+ 10   PIO       Port1 RX
+ 11   PIO       Port1 TX
+ 12   PIO       Port1 RS485TXRX
+ 13   PIO       Port1 RS485TXEnable
+ 14   GPIO      LED0
+ 15   GPIO      LED1
+ 16   GPIO/IRQ  PORT_FAULT ( +3.3v to the ports overloaded) needs pullup
+ 17   GPIO      PORT_CE ( +3.3v to the ports enable pin)
+ 18   IIC1      SDA1 Ports 3,4
+ 19   IIC1      SCL1
+ 20   PIO       Port4 RX
+ 21   PIO       Port4 TX
+ 22   PIO       Port4 RS485TXRX
+ 23   PIO       Port4 RS485TXEnable
+ 24   PIO       Port3 RX
+ 25   PIO       Port3 TX
+ 26   PIO       Port3 RS485TXRX
+ 27   PIO       Port3 RS485TXEnable
+ 28   GPIO/IRQ  nFL (Motor fault) needs pull up
+ 29   ADC       ADC_VIN = (vin*10/(10+47))
+
