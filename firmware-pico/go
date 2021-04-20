@@ -1,0 +1,4 @@
+#!/bin/bash
+cd build
+make
+cp -a test.uf2 /media/mo/RPI-RP2/
