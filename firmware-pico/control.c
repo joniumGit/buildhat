@@ -3,19 +3,14 @@
 #include "debug.h"
 // #include "gpio.h"
 #include "control.h"
-// #include "command.h"
+#include "command.h"
 #include "ioconv.h"
-// #include "hardware.h"
+#include "hardware.h"
 
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "hardware/irq.h"
 #include "hardware/uart.h"
-
-#define UART_C uart0
-#define UART_C_TXPIN 0
-#define UART_C_RXPIN 1
-#define UART_C_BAUD 115200
 
 static volatile char ctrlrxbuf[CTRLRXBLEN];
 static volatile int ctrlrxhead;
@@ -29,9 +24,6 @@ void control_uart_irq() {
   uart_hw_t*u=uart_get_hw(UART_C);
   int b,i,s;
   s=u->fr;
-//  uart_putc_raw(uart0,'i');
-//  uart_putc_raw(uart0,'0'+(s>>4));
-//  uart_putc_raw(uart0,'0'+(s&0x0f));
   if(s&0x80) {                                     // TX empty?
     if(ctrltxhead==ctrltxtail) {                   // buffer empty?
       u->icr=0x20;                              // disable interrupt
@@ -59,16 +51,16 @@ int i1chu() {
 
 void o1chu(int c) {
   int i;
-//  uart_putc_raw(uart0,'c');
   i=(ctrltxhead+1)%CTRLTXBLEN;
   if(i==ctrltxtail) return;                        // buffer full? discard
   ctrltxbuf[ctrltxhead]=c;
   ctrltxhead=i;
-//  uart_get_hw(UART_C)->imsc|=0x20;
   irq_set_pending(UART0_IRQ);
   }
 
 void init_control() {
+   ctrlrxhead=ctrlrxtail=0;
+   ctrltxhead=ctrltxtail=0;
   uart_init(UART_C,UART_C_BAUD);
   gpio_set_function(UART_C_RXPIN,GPIO_FUNC_UART);
   gpio_set_function(UART_C_TXPIN,GPIO_FUNC_UART);
@@ -78,20 +70,11 @@ void init_control() {
   uart_set_irq_enables(UART_C,1,1);
   uart_get_hw(UART_C)->ifls=0;
   uart_get_hw(UART_C)->imsc=0x30;
-  }
-//   RCC->APB1ENR|=APB1CLOCKS_C;
-//   RCC->APB2ENR|=APB2CLOCKS_C;
-//   ctrlrxhead=ctrlrxtail=0;
-//   ctrltxhead=ctrltxtail=0;
-//   gpio_afr(UART_C_RXPORT,UART_C_RXPIN,UART_C_RXAFN);
-//   gpio_afr(UART_C_TXPORT,UART_C_TXPIN,UART_C_TXAFN);
-//   UART_C->BRR=(100000000/UART_C_BAUD+1)/2;
-//   UART_C->CR1=0x202c;                              // enable USART, TX and RX, RX interrupt
-//   nvic_intena(UART_C_IRQn);
-//   onl();
-//   ostrnl("Type help <RETURN> for help");
-//   cmd_prompt();
-//   }
+   onl();
+   ostrnl("Type help <RETURN> for help");
+   cmd_prompt();
+   }
+
 // wait for a character
 int w1ch() {
   int u;
@@ -251,7 +234,7 @@ void proc_ctrl() {
     if(u==0x0d) {
       onl();
       cmdbuf[cbwptr]=0;
-//      proc_cmd(); !!!
+//!!!      proc_cmd();
       cbwptr=0;
       continue;
       }
