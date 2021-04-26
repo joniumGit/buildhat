@@ -81,12 +81,13 @@ void init_ports() {
     gpio_set_dir(p->pin_tx ,0);
     }
   gpio_put(PIN_PORTON,1);                          // enable port power
+  ostrnl("Ports initialised...");
   wait_ticks(100);
+  ostrnl("Checking I²C...");
   for(i=0x08;i<0x78;i++) {
     unsigned char t;
-    o1hex(i2c_read_blocking(i2c0,i,&t,1,0));
-    o1hex(i2c_read_blocking(i2c1,i,&t,1,0));
-    osp();
+    o8hex(i2c_read_blocking(i2c0,i,&t,1,0)>>24); osp();
+    o8hex(i2c_read_blocking(i2c1,i,&t,1,0)>>24); osp(); osp();
     if(i%8==7) onl();
     }
 //!!!  for(i=0;i<NPORTS;i++) {

@@ -10,6 +10,7 @@ const uint LED_PIN = 25;
 
 int main() {
   init_control();
+  init_ports();
 //   stdio_uart_init_full(uart0,3000000,PICO_DEFAULT_UART_TX_PIN,PICO_DEFAULT_UART_RX_PIN);
   gpio_init(LED_PIN);
   gpio_set_dir(LED_PIN, GPIO_OUT);
