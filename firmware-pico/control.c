@@ -1,7 +1,6 @@
 #include "common.h"
 // #include "system.h"
 #include "debug.h"
-// #include "gpio.h"
 #include "control.h"
 #include "command.h"
 #include "ioconv.h"

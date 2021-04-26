@@ -10,11 +10,14 @@ pico_sdk_init()
 
 add_executable(test
   test.c
-  ioconv.c
-  debug.c
   control.c
   command.c
+  debug.c
   hardware.c
+  ioconv.c
+  leds.c
+  ports.c
+  timer.c
   )
 
 # pico_enable_stdio_usb(test 1)

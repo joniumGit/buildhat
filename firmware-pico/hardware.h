@@ -12,11 +12,6 @@ extern struct porthw {
   int pin_tx;
   i2c_inst_t*i2c;                                    // port for communication with motor driver
   int i2c_add;
-//  USART_TypeDef*uart;                              // corresponding UART
-//  GPIO_TypeDef*port_d5; int pin_d5;
-//  GPIO_TypeDef*port_d6; int pin_d6;
-//  GPIO_TypeDef*port_in1;int pin_in1;               // PWM
-//  GPIO_TypeDef*port_in2;int pin_in2;
   } porthw[NPORTS];
 
 // control UART
@@ -26,7 +21,16 @@ extern struct porthw {
 #define UART_C_BAUD 115200
 
 // pins connected to LEDs: LED0 is red, LED1 is green
-#define PIN_LED0 14
-#define PIN_LED1 15
+#define PIN_LED0       14
+#define PIN_LED1       15
+#define PIN_PORTFAULT  16                            // +3V3 to the ports overloaded; needs pullup
+#define PIN_PORTON     17                            // enable +3V3 to the ports
+#define PIN_MOTORFAULT 28                            // motor fault (wire-OR); needs pullup
+#define PIN_ADCVIN     29                            // Vin*10/(10+47)
+
+#define PIN_I2C0_SDA    8
+#define PIN_I2C0_SCL    9
+#define PIN_I2C1_SDA   18
+#define PIN_I2C1_SCL   19
 
 #define GPIO_READ(pin) (!!gpio_get(pin))
