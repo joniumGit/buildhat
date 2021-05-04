@@ -31,3 +31,26 @@ GPIO  Block     Use
  28   GPIO/IRQ  nFL (Motor fault) needs pull up
  29   ADC       ADC_VIN = (vin*10/(10+47))
 
+To get Picoprobe to work with udev rule some combination of the following
+works.
+
+root@ear:/etc/udev/rules.d# cat 99-picoprobe.rules
+# Picoprobe
+# ATTRS{idVendor}=="2E8A", ATTRS{idProduct}=="0004", MODE="0666", OWNER="mo", GROUP="mo"
+# ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE="660", GROUP="plugdev", TAG+="uaccess"
+ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE="660", GROUP="plugdev"
+
+root@ear:/etc/udev/rules.d# /etc/init.d/udev restart
+root@ear:/etc/udev/rules.d# udevadm control --reload
+
+Built openocd branch with modified Makefile:
+  prefix = /home/mo/tempd/pico/openocd/usr/local
+instead of
+  prefix = /usr/local
+
+Then can make install as non-root and not write over other modified version
+of openocd we already have in /usr/local.
+
+Now (as non-root) can do
+
+openocd/usr/local/bin/openocd -f openocd/usr/local/share/openocd/scripts/interface/picoprobe.cfg -f openocd/usr/local/share/openocd/scripts/target/rp2040.cfg -s tcl
