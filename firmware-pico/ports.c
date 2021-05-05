@@ -8,8 +8,11 @@
 #include "hardware.h"
 #include "ports.h"
 
+#include "hardware/adc.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
+
+static UC driverdata[NPORTS][DRIVERBYTES];
 
 unsigned int pwm_period=PWM_PERIOD_DEFAULT;
 
@@ -49,17 +52,24 @@ void port_initpwm(unsigned int period) {
 //    }
   }
 
+static int port_readbyte(int p,int b) {
+  UC t;
+  t=b;
+  if(i2c_write_blocking(porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
+  if(i2c_read_blocking (porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
+  return t;
+  }
+
 void init_ports() {
-  int i;
+  int i,j;
   struct porthw*p;
+  ostrnl("Initialising ports");
   memset(portinfo,0,sizeof(portinfo));
-  gpio_set_dir(PIN_LED0      ,1);
-  gpio_set_dir(PIN_LED1      ,1);
-  gpio_set_dir(PIN_PORTFAULT ,0);
-  gpio_pull_up(PIN_PORTFAULT);
-  gpio_set_dir(PIN_PORTON    ,1);
-  gpio_set_dir(PIN_MOTORFAULT,0);
-  gpio_pull_up(PIN_MOTORFAULT);
+  gpio_init(PIN_LED0      ); gpio_set_dir(PIN_LED0      ,1);
+  gpio_init(PIN_LED1      ); gpio_set_dir(PIN_LED1      ,1);
+  gpio_init(PIN_PORTFAULT ); gpio_set_dir(PIN_PORTFAULT ,0); gpio_pull_up(PIN_PORTFAULT);
+  gpio_init(PIN_PORTON    ); gpio_set_dir(PIN_PORTON    ,1); gpio_put(PIN_PORTON,0);
+  gpio_init(PIN_MOTORFAULT); gpio_set_dir(PIN_MOTORFAULT,0); gpio_pull_up(PIN_MOTORFAULT);
 //!!!  gpio_set_dir(PIN_ADCVIN    ,1);
   i2c_init(i2c0,100000);
   i2c_init(i2c1,100000);
@@ -71,7 +81,6 @@ void init_ports() {
   gpio_pull_up(PIN_I2C0_SCL);
   gpio_pull_up(PIN_I2C1_SDA);
   gpio_pull_up(PIN_I2C1_SCL);
-  gpio_put(PIN_PORTON,0);                          // disable port power
   for(i=0;i<NPORTS;i++) {
     mqhead[i]=mqtail[i]=0;
     p=porthw+i;
@@ -81,23 +90,42 @@ void init_ports() {
     gpio_set_dir(p->pin_tx ,0);
     }
   gpio_put(PIN_PORTON,1);                          // enable port power
-  ostrnl("Ports initialised...");
-  for(;;) {
-    wait_ticks(500);
-    ostrnl("Checking I²C0:");
-    for(i=0x08;i<0x78;i++) {
-      unsigned char t;
-      if(i%8==0) { o2hex(i); osp(); }
-      o8hex(i2c_read_blocking(i2c0,i,&t,1,0)); osp();
-      if(i%8==7) onl();
+
+  wait_ticks(100);
+  ostrnl("Checking I²C0:");
+  for(i=0x08;i<0x80;i++) {
+    unsigned char t;
+    if(i%8==0) { o2hex(i); osp(); }
+    if(i2c_read_blocking(i2c0,i,&t,1,0)==-2) o1ch('.'); else o1ch('+'); osp();
+    if(i%8==7) onl();
+    }
+  ostrnl("Checking I²C1:");
+  for(i=0x08;i<0x80;i++) {
+    if(i%8==0) { o2hex(i); osp(); }
+    unsigned char t;
+    if(i2c_read_blocking(i2c1,i,&t,1,0)==-2) o1ch('.'); else o1ch('+'); osp();
+    if(i%8==7) onl();
+    }
+
+  ostrnl("Reading driver dumps");
+  for(i=0;i<NPORTS;i++) {
+    ostr("Port "); odec(i); onl();
+    for(j=0;j<DRIVERBYTES;j++) {
+      driverdata[i][j]=port_readbyte(i,j);
+      o2hex(driverdata[i][j]);
+      if(j%16==15) onl();
+      else         osp();
       }
-    ostrnl("Checking I²C1:");
-    for(i=0x08;i<0x78;i++) {
-      if(i%8==0) { o2hex(i); osp(); }
-      unsigned char t;
-      o8hex(i2c_read_blocking(i2c1,i,&t,1,0)); osp();
-      if(i%8==7) onl();
-      }
+    }
+
+  adc_init();
+  adc_gpio_init(PIN_ADCVIN);
+  adc_select_input(ADC_CHAN);
+  for(i=0;;i++) {
+    o8hex(adc_read()); onl();
+    gpio_put(PIN_LED0,i&1);
+    gpio_put(PIN_LED1,(i&2)>>1);
+    wait_ticks(100);
     }
 
 //!!!  for(i=0;i<NPORTS;i++) {

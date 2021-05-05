@@ -53,4 +53,7 @@ of openocd we already have in /usr/local.
 
 Now (as non-root) can do
 
-openocd/usr/local/bin/openocd -f openocd/usr/local/share/openocd/scripts/interface/picoprobe.cfg -f openocd/usr/local/share/openocd/scripts/target/rp2040.cfg -s tcl
+/home/mo/tempd/pico/openocd/usr/local/bin/openocd -f /home/mo/tempd/pico/openocd/usr/local/share/openocd/scripts/interface/picoprobe.cfg -f /home/mo/tempd/pico/openocd/usr/local/share/openocd/scripts/target/rp2040.cfg -s tcl
+
+TODO
+Fix GPIO drive strengths

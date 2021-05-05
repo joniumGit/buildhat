@@ -1,5 +1,7 @@
 #pragma once
 
+#define DRIVERBYTES 256                            // driver configuration bits address space
+
 #define TXBLEN 132                                 // maximum message length
 #define PWM_PERIOD_DEFAULT 32768                   // in units of 10ns
 extern unsigned int pwm_period;
