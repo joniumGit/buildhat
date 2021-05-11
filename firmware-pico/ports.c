@@ -8,9 +8,15 @@
 #include "hardware.h"
 #include "ports.h"
 
+// #include "pico/stdlib.h"
+
 #include "hardware/adc.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
+#include "hardware/pio.h"
+
+#include "uart_tx.pio.h"
+#include "uart_rx.pio.h"
 
 static UC driverdata[NPORTS][DRIVERBYTES];
 
@@ -60,6 +66,14 @@ static int port_readbyte(int p,int b) {
   return t;
   }
 
+unsigned int port_state56(int pn) {
+  unsigned int u;
+  u=port_readbyte(pn,0x4b);
+  u=(u>>6)&3;
+  o1hex(u);
+  return u;
+  }
+
 void init_ports() {
   int i,j;
   struct porthw*p;
@@ -84,10 +98,10 @@ void init_ports() {
   for(i=0;i<NPORTS;i++) {
     mqhead[i]=mqtail[i]=0;
     p=porthw+i;
-    gpio_set_dir(p->pin_rts,1);
-    gpio_set_dir(p->pin_dio,1);
-    gpio_set_dir(p->pin_rx ,0);
-    gpio_set_dir(p->pin_tx ,0);
+    gpio_init(p->pin_rts); gpio_set_dir(p->pin_rts,1); gpio_put(p->pin_rts,0);
+    gpio_init(p->pin_dio); gpio_set_dir(p->pin_dio,0);
+    gpio_init(p->pin_rx ); gpio_set_dir(p->pin_rx ,1);
+    gpio_init(p->pin_tx ); gpio_set_dir(p->pin_tx ,1);
     }
   gpio_put(PIN_PORTON,1);                          // enable port power
 
@@ -118,14 +132,71 @@ void init_ports() {
       }
     }
 
+
+
+  const uint PIN_TX = 5;
+  const uint PIN_RX = 4;
+  const uint SERIAL_BAUD = 115200;
+
+  PIO pio = pio0;
+  uint txprog = pio_add_program(pio, &uart_tx_program);
+  uart_tx_program_init(pio, 0, txprog, PIN_TX, SERIAL_BAUD); // SM 0 for tx
+
+  uint rxprog = pio_add_program(pio, &uart_rx_program);
+  uart_rx_program_init(pio, 1, rxprog, PIN_RX, SERIAL_BAUD); // SM 1 for rx
+
+  o8hex(pio0->sm[0].clkdiv); onl();
+  o8hex(pio0->sm[1].clkdiv); onl();
+
+  while (true) {
+    uart_tx_program_puts(pio, 0, "Hi ");
+    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
+    sleep_ms(300);
+    o1ch('.');
+    uart_tx_program_puts(pio, 0, "PIO!");
+    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
+    sleep_ms(300);
+    o1ch(':');
+    }
+
+
+//  for(;;) {
+//    for(i=0;i<NPORTS;i++) {
+//      for(j=0;j<4;j++) {
+//        gpio_put(porthw[i].pin_rx,(j&2)?1:0);
+//        gpio_put(porthw[i].pin_tx,(j&1)?1:0);
+//        port_state56(i);
+//        }
+//      osp();
+//      }
+//    onl();
+//    wait_ticks(100);
+//    }
+
+//  padsbank0_hw->io[29]=0x80; // disable OD and IE
+//  adc_hw->cs=(3<<12)|1;
+//  adc_hw->div=1<<16;
+//  adc_hw->cs|=8;
+
   adc_init();
-  adc_gpio_init(PIN_ADCVIN);
+  wait_ticks(100);
   adc_select_input(ADC_CHAN);
+  wait_ticks(100);
+  adc_gpio_init(PIN_ADCVIN);
+  wait_ticks(100);
   for(i=0;;i++) {
-    o8hex(adc_read()); onl();
+    adc_hw->cs|=4;
+    wait_ticks(100);
+//    o8hex(padsbank0_hw->io[29]); osp();
+//    o8hex(adc_hw->cs); osp();
+//    o8hex(adc_hw->fcs); osp();
+    o8hex(adc_hw->result); onl();
+//    o8hex(adc_read()); onl(); // apparently only reads once!!!
     gpio_put(PIN_LED0,i&1);
     gpio_put(PIN_LED1,(i&2)>>1);
     wait_ticks(100);
+//    adc_hw->cs|=4;
+//    wait_ticks(100);
     }
 
 //!!!  for(i=0;i<NPORTS;i++) {
@@ -134,14 +205,6 @@ void init_ports() {
 //!!!    }
 
   port_initpwm(PWM_PERIOD_DEFAULT);
-  }
-
-unsigned int port_state56(int pn) {
-  unsigned int u;
-  struct porthw*p=porthw+pn;
-//!!!  u=GPIO_READ(p->port_d6,p->pin_d6)+(GPIO_READ(p->port_d5,p->pin_d5)<<1);
-  u=0;
-  return u;
   }
 
 // set PWM values according to pwm:

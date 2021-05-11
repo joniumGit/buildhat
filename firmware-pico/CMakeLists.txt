@@ -20,7 +20,10 @@ add_executable(test
   timer.c
   )
 
+pico_generate_pio_header(test ${CMAKE_CURRENT_LIST_DIR}/uart_tx.pio)
+pico_generate_pio_header(test ${CMAKE_CURRENT_LIST_DIR}/uart_rx.pio)
+
 # pico_enable_stdio_usb(test 1)
 pico_enable_stdio_uart(test 1)
 pico_add_extra_outputs(test)
-target_link_libraries(test pico_stdlib hardware_adc hardware_i2c)
+target_link_libraries(test pico_stdlib hardware_adc hardware_i2c hardware_pio)
