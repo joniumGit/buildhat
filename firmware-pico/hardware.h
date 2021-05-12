@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "hardware/i2c.h"
+#include "hardware/pio.h"
 
 #define NPORTS 4
 
@@ -12,6 +13,9 @@ extern struct porthw {
   int pin_tx;
   i2c_inst_t*i2c;                                    // port for communication with motor driver
   int i2c_add;
+  PIO pio;
+  int txsm;
+  int rxsm;
   } porthw[NPORTS];
 
 // control UART

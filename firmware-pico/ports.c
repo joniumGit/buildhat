@@ -13,6 +13,7 @@
 #include "hardware/adc.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
+#include "hardware/irq.h"
 #include "hardware/pio.h"
 
 #include "uart_tx.pio.h"
@@ -58,7 +59,7 @@ void port_initpwm(unsigned int period) {
 //    }
   }
 
-static int port_readbyte(int p,int b) {
+static int port_readi2cbyte(int p,int b) {
   UC t;
   t=b;
   if(i2c_write_blocking(porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
@@ -68,11 +69,32 @@ static int port_readbyte(int p,int b) {
 
 unsigned int port_state56(int pn) {
   unsigned int u;
-  u=port_readbyte(pn,0x4b);
+  u=port_readi2cbyte(pn,0x4b);
   u=(u>>6)&3;
   o1hex(u);
   return u;
   }
+
+static inline void port_uart_irq(int pn) {
+  int sm;
+  PIO pio;
+  static int t;
+  int u;
+//  gpio_put(PIN_LED0,1); gpio_put(PIN_LED1,1);
+  pio=porthw[pn].pio;
+  sm =porthw[pn].rxsm;
+  io_rw_8*rxfifo_shift=(io_rw_8*)&pio->rxf[sm]+3;
+  if(!pio_sm_is_rx_fifo_empty(pio,sm)) u=(int)*rxfifo_shift;
+  gpio_put(PIN_LED0,t&1);
+  gpio_put(PIN_LED1,(t&2)>>1);
+  t++;
+  o8hex(pio->intr); osp();
+  }
+
+static void port0_uart_irq() { port_uart_irq(0); }
+static void port1_uart_irq() { port_uart_irq(1); }
+static void port2_uart_irq() { port_uart_irq(2); }
+static void port3_uart_irq() { port_uart_irq(3); }
 
 void init_ports() {
   int i,j;
@@ -125,36 +147,52 @@ void init_ports() {
   for(i=0;i<NPORTS;i++) {
     ostr("Port "); odec(i); onl();
     for(j=0;j<DRIVERBYTES;j++) {
-      driverdata[i][j]=port_readbyte(i,j);
+      driverdata[i][j]=port_readi2cbyte(i,j);
       o2hex(driverdata[i][j]);
       if(j%16==15) onl();
       else         osp();
       }
     }
 
-
-
-  const uint PIN_TX = 5;
-  const uint PIN_RX = 4;
   const uint SERIAL_BAUD = 115200;
+  int txprog0=pio_add_program(pio0,&uart_tx_program);
+  int rxprog0=pio_add_program(pio0,&uart_rx_program);
+  int txprog1=pio_add_program(pio1,&uart_tx_program);
+  int rxprog1=pio_add_program(pio1,&uart_rx_program);
 
-  PIO pio = pio0;
-  uint txprog = pio_add_program(pio, &uart_tx_program);
-  uart_tx_program_init(pio, 0, txprog, PIN_TX, SERIAL_BAUD); // SM 0 for tx
-
-  uint rxprog = pio_add_program(pio, &uart_rx_program);
-  uart_rx_program_init(pio, 1, rxprog, PIN_RX, SERIAL_BAUD); // SM 1 for rx
+  uart_tx_program_init(pio0,0,txprog0,porthw[0].pin_tx,SERIAL_BAUD); // SM 0 for tx
+  uart_rx_program_init(pio0,1,rxprog0,porthw[0].pin_rx,SERIAL_BAUD); // SM 1 for rx
+  uart_tx_program_init(pio0,2,txprog0,porthw[1].pin_tx,SERIAL_BAUD); // SM 2 for tx
+  uart_rx_program_init(pio0,3,rxprog0,porthw[1].pin_rx,SERIAL_BAUD); // SM 3 for rx
+  uart_tx_program_init(pio1,0,txprog1,porthw[2].pin_tx,SERIAL_BAUD); // SM 0 for tx
+  uart_rx_program_init(pio1,1,rxprog1,porthw[2].pin_rx,SERIAL_BAUD); // SM 1 for rx
+  uart_tx_program_init(pio1,2,txprog1,porthw[3].pin_tx,SERIAL_BAUD); // SM 2 for tx
+  uart_rx_program_init(pio1,3,rxprog1,porthw[3].pin_rx,SERIAL_BAUD); // SM 3 for rx
 
   o8hex(pio0->sm[0].clkdiv); onl();
   o8hex(pio0->sm[1].clkdiv); onl();
 
+  irq_set_exclusive_handler(PIO0_IRQ_0,port0_uart_irq);
+  irq_set_exclusive_handler(PIO0_IRQ_1,port1_uart_irq);
+  irq_set_exclusive_handler(PIO1_IRQ_0,port2_uart_irq);
+  irq_set_exclusive_handler(PIO1_IRQ_1,port3_uart_irq);
+  irq_set_enabled(PIO0_IRQ_0,1);
+  irq_set_enabled(PIO0_IRQ_1,1);
+  irq_set_enabled(PIO1_IRQ_0,1);
+  irq_set_enabled(PIO1_IRQ_1,1);
+
+  pio0->inte0=0x02; //0x12; // SM0 TXFNULL, SM1 RXNEMPTY
+  pio0->inte1=0x08; //0x48; // SM2 TXFNULL, SM3 RXNEMPTY
+  pio1->inte0=0x02; //0x12; // SM0 TXFNULL, SM1 RXNEMPTY
+  pio1->inte1=0x08; //0x48; // SM2 TXFNULL, SM3 RXNEMPTY
+
   while (true) {
-    uart_tx_program_puts(pio, 0, "Hi ");
-    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
+    uart_tx_program_puts(pio0,2,"Hi ");
+//    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
     sleep_ms(300);
     o1ch('.');
-    uart_tx_program_puts(pio, 0, "PIO!");
-    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
+    uart_tx_program_puts(pio0,2,"PIO!");
+//    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
     sleep_ms(300);
     o1ch(':');
     }
@@ -293,7 +331,7 @@ int port_waitch(int pn) {
 //!!!  return u->DR;
   }
 
-void port_uart_irq(int pn) {
+// void port_uart_irq(int pn) {
 //!!!  struct porthw*p=porthw+pn;
 //!!!  struct portinfo*q=portinfo+pn;
 //!!!  USART_TypeDef*u=p->uart;
@@ -408,7 +446,7 @@ void port_uart_irq(int pn) {
 //!!!    q->lasttick=tick;
 //!!!    }
 //!!!//  GPIOD->ODR&=~8;
-  }
+//  }
 
 void port_sendmessage(int pn,unsigned char*buf,int l) {
 //!!!  struct porthw*p=porthw+pn;
