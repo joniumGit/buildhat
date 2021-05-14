@@ -5,6 +5,7 @@
 #include "command.h"
 #include "ioconv.h"
 #include "hardware.h"
+#include "timer.h"
 
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
@@ -58,21 +59,25 @@ void o1chu(int c) {
   }
 
 void init_control() {
-   ctrlrxhead=ctrlrxtail=0;
-   ctrltxhead=ctrltxtail=0;
+  irq_set_enabled(UART0_IRQ,0);
+  ctrlrxhead=ctrlrxtail=0;
+  ctrltxhead=ctrltxtail=0;
   uart_init(UART_C,UART_C_BAUD);
   gpio_set_function(UART_C_RXPIN,GPIO_FUNC_UART);
   gpio_set_function(UART_C_TXPIN,GPIO_FUNC_UART);
   uart_set_fifo_enabled(UART_C,0);
   irq_set_exclusive_handler(UART0_IRQ,control_uart_irq);
-  irq_set_enabled(UART0_IRQ,1);
-  uart_set_irq_enables(UART_C,1,1);
+//  uart_set_irq_enables(UART_C,1,1);
   uart_get_hw(UART_C)->ifls=0;
   uart_get_hw(UART_C)->imsc=0x30;
-   onl();
-   ostrnl("Type help <RETURN> for help");
-   cmd_prompt();
-   }
+  uart_get_hw(UART_C)->dr;
+  uart_get_hw(UART_C)->icr=0x7ff;
+  irq_set_enabled(UART0_IRQ,1);
+  onl();
+  ostrnl("Type help <RETURN> for help");
+  cmd_prompt();
+  do wait_ticks(10); while(i1ch()!=-1); // !!!we seem to get a spurious character in the RX buffer at the start
+  }
 
 // wait for a character
 int w1ch() {
@@ -233,7 +238,7 @@ void proc_ctrl() {
     if(u==0x0d) {
       onl();
       cmdbuf[cbwptr]=0;
-//!!!      proc_cmd();
+      proc_cmd();
       cbwptr=0;
       continue;
       }

@@ -17,6 +17,7 @@ add_executable(test
   ioconv.c
   leds.c
   ports.c
+  pwm_pid.c
   timer.c
   )
 

@@ -6,7 +6,7 @@
 #include "device.h"
 #include "message.h"
 #include "pwm_pid.h"
-#include "adc.h"
+#include "timer.h"
 #include "debug.h"
 #include "ioconv.h"
 #include "control.h"
@@ -123,8 +123,7 @@ static int cmd_set()  {
   }
 static int cmd_on()    { cmd_set_const(1.0); return 0; }
 static int cmd_off()   { cmd_set_const(0.0); return 0; }
-//!!! static int cmd_vin()   { ofxp(read_vin(),16,2); ostrnl(" V"); return 0; }
-static int cmd_vin()   { ofxp(1234567,16,2); ostrnl(" V"); return 0; }
+static int cmd_vin()   { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
 static int cmd_debug() { return !parseint(&debug); }
 static int cmd_xyzzy() { pid_drive_limit=1.0; return 0; }
 

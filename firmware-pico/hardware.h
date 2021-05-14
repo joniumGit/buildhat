@@ -18,7 +18,13 @@ extern struct porthw {
   int txsm;
   int rxsm;
   int irq;
+  volatile io_rw_32*inte;
+  unsigned int intb; // interrupt bits
   } porthw[NPORTS];
+
+// INTE bit is intb&PORT_INTE_RXMASK or intb&PORT_INTE_TXMASK
+#define PORT_INTE_RXMASK 0x0f
+#define PORT_INTE_TXMASK 0xf0
 
 // control UART
 #define UART_C uart0

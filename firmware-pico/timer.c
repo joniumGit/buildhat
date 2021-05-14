@@ -1,43 +1,32 @@
 #include "common.h"
 #include "system.h"
-#include "adc.h"
+#include "hardware.h"
 #include "leds.h"
 #include "pico/stdlib.h"
+#include "hardware/adc.h"
 
 static uint64_t time0;
 static unsigned int tick;
-
-//!!! void Timer7IRQ() {
-//!!!   int u;
-//!!!   TIM7->SR=0;
-//!!!   tick++;
-//!!!   if(tick&1) {
-//!!!     adc_vref=ADC1->DR;                             // read VREFINT conversion result
-//!!!     adc_trig(11);                                  // trigger Vin conversion
-//!!!     }
-//!!!   else {
-//!!!     adc_vin=ADC1->DR;                              // read Vin conversion result
-//!!!     adc_trig(17);                                  // trigger VREFINT conversion
-//!!!     }
-//!!!   if((tick&15)==15) {                              // every 16ms, and after the first few conversions have been done
-//!!!     u=read_vin();
-//!!!     if     (u<VIN_THRESH0) leds_set(0);
-//!!!     else if(u<VIN_THRESH1) leds_set(3);            // orange
-//!!!     else if(u<VIN_THRESH2) leds_set(2);            // green
-//!!!     else                   leds_set(1);            // red
-//!!!     }
-//!!!   }
+unsigned int adc_vin;
 
 void init_timer() {
+  adc_init();
+  adc_gpio_init(PIN_ADCVIN);
+  adc_select_input(ADC_CHAN); 
+  adc_hw->cs|=4; // trigger another conversion
   time0=time_us_64();
   }
 
 unsigned int gettick() {
   uint64_t t;
   t=time_us_64();
-  while(t>time0) {
-    time0+=1000;
-    tick++;
+  if(t>time0) {
+    adc_vin=adc_hw->result*57/10*3300/4096;  // in mV
+    adc_hw->cs|=4; // trigger another conversion
+    while(t>time0) {
+      time0+=1000;
+      tick++;
+      }
     }
   return tick;
   }

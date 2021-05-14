@@ -60,9 +60,8 @@ extern void port_motor_brake(int pn);
 extern void port_setbaud(int pn,int baud);
 extern void port_uarton(int pn);
 extern void port_uartoff(int pn);
-extern void port_putch(int pn,int c);
-extern int port_getch(int pn);
+//extern void port_putch(int pn,int c);
+//extern int port_getch(int pn);
 extern int port_waitch(int pn);
-//extern void port_uart_irq(int pn);
 extern void port_sendmessage(int pn,unsigned char*buf,int l);
 

@@ -74,21 +74,7 @@ unsigned int port_state56(int pn) {
   return u;
   }
 
-static inline void port_uart_irq(int pn) {
-  int sm;
-  PIO pio;
-  static int t;
-  int u;
-//  gpio_put(PIN_LED0,1); gpio_put(PIN_LED1,1);
-  pio=porthw[pn].pio;
-  sm =porthw[pn].rxsm;
-  io_rw_8*rxfifo_shift=(io_rw_8*)&pio->rxf[sm]+3;
-  if(!pio_sm_is_rx_fifo_empty(pio,sm)) u=(int)*rxfifo_shift;
-  gpio_put(PIN_LED0,t&1);
-  gpio_put(PIN_LED1,(t&2)>>1);
-  t++;
-  o8hex(pio->intr); osp();
-  }
+static void port_uart_irq(int pn);
 
 static void port0_uart_irq() { port_uart_irq(0); }
 static void port1_uart_irq() { port_uart_irq(1); }
@@ -158,65 +144,14 @@ void init_ports() {
   txprogoffset=pio_add_program(pio0,&uart_tx_program);
   rxprogoffset=pio_add_program(pio0,&uart_rx_program);
   assert(      pio_add_program(pio1,&uart_tx_program)==txprogoffset);
-  assert(      pio_add_program(pio1,&uart_rx_program)==txprogoffset);
+  assert(      pio_add_program(pio1,&uart_rx_program)==rxprogoffset);
 
   irq_set_exclusive_handler(PIO0_IRQ_0,port0_uart_irq);
   irq_set_exclusive_handler(PIO0_IRQ_1,port1_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_0,port2_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_1,port3_uart_irq);
 
-  pio0->inte0=0x02; //0x12; // SM0 TXFNULL, SM1 RXNEMPTY
-  pio0->inte1=0x08; //0x48; // SM2 TXFNULL, SM3 RXNEMPTY
-  pio1->inte0=0x02; //0x12; // SM0 TXFNULL, SM1 RXNEMPTY
-  pio1->inte1=0x08; //0x48; // SM2 TXFNULL, SM3 RXNEMPTY
-
-//  while (true) {
-//    uart_tx_program_puts(pio0,2,"Hi ");
-////    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
-//    sleep_ms(300);
-//    o1ch('.');
-//    uart_tx_program_puts(pio0,2,"PIO!");
-////    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
-//    sleep_ms(300);
-//    o1ch(':');
-//    }
-
-
-//  for(;;) {
-//    for(i=0;i<NPORTS;i++) {
-//      for(j=0;j<4;j++) {
-//        gpio_put(porthw[i].pin_rx,(j&2)?1:0);
-//        gpio_put(porthw[i].pin_tx,(j&1)?1:0);
-//        port_state56(i);
-//        }
-//      osp();
-//      }
-//    onl();
-//    wait_ticks(100);
-//    }
-
-//   adc_init();
-//   wait_ticks(100);
-//   adc_select_input(ADC_CHAN);
-//   wait_ticks(100);
-//   adc_gpio_init(PIN_ADCVIN);
-//   wait_ticks(100);
-//   for(i=0;;i++) {
-//     adc_hw->cs|=4;
-//     wait_ticks(100);
-// //    o8hex(padsbank0_hw->io[29]); osp();
-// //    o8hex(adc_hw->cs); osp();
-// //    o8hex(adc_hw->fcs); osp();
-//     o8hex(adc_hw->result); onl();
-// //    o8hex(adc_read()); onl(); // apparently only reads once!!!
-//     gpio_put(PIN_LED0,i&1);
-//     gpio_put(PIN_LED1,(i&2)>>1);
-//     wait_ticks(100);
-// //    adc_hw->cs|=4;
-// //    wait_ticks(100);
-//     }
-
-  port_initpwm(PWM_PERIOD_DEFAULT);
+//!!!  port_initpwm(PWM_PERIOD_DEFAULT);
   }
 
 // set PWM values according to pwm:
@@ -293,13 +228,14 @@ void port_uarton(int pn) {
   sm_config_set_clkdiv(&c,div);
 
   q->mstate=MS_NOSYNC;
-//!!!  q->lasttick=tick;
+  q->lasttick=gettick();
   q->framingerrors=0;
   q->checksumerrors=0;
   q->txptr=-1;
   q->txlen=0;
 
   pio_sm_init(pio,rsm,rxprogoffset,&c);
+  *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt for now
   pio_sm_set_enabled(pio,rsm,true);
   irq_set_enabled(p->irq,1);
   }
@@ -318,50 +254,40 @@ void port_uartoff(int pn) {
   gpio_init(txp); gpio_set_dir(txp,0);
   gpio_init(rxp); gpio_set_dir(rxp,0);
   irq_set_enabled(p->irq,0);
+  p->inte=0;
 
   q->mstate=MS_NOSYNC;
   q->txptr=-1;
   }
 
-void port_putch(int pn,int c) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  USART_TypeDef*u=p->uart;
-//!!!  while((u->SR&0x80)==0) ;
-//!!!  u->DR=c;
-  }
-
-int port_getch(int pn) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  USART_TypeDef*u=p->uart;
-//!!!  if(u->SR&0x20) return u->DR;
-//!!!  return -1;
-  }
-
 int port_waitch(int pn) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  USART_TypeDef*u=p->uart;
-//!!!  while((u->SR&0x20)==0) ;
-//!!!  return u->DR;
+  struct porthw*p=porthw+pn;
+  PIO pio=p->pio;
+  int rsm=p->rxsm;
+  while(pio_sm_is_rx_fifo_empty(pio,rsm)) ;
+  return (int)*((io_rw_8*)&pio->rxf[rsm]+3);
   }
 
-// void port_uart_irq(int pn) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  struct portinfo*q=portinfo+pn;
-//!!!  USART_TypeDef*u=p->uart;
-//!!!  struct message*m=messages+pn;
-//!!!  int b,i,s,f0,f1,f2;
-//!!!  s=u->SR;
-//!!!  if(s&0x80) {                                     // TX empty?
-//!!!    if(q->txptr>=0) {
-//!!!      u->DR=q->txbuf[q->txptr++];                  // send next character
-//!!!      if(q->txptr==q->txlen) {                     // finished?
-//!!!        q->txptr=-1;
-//!!!        u->CR1&=~0x80;
-//!!!        }
-//!!!      }
-//!!!    else
-//!!!      u->CR1&=~0x80;
-//!!!    }
+static void port_uart_irq(int pn) {
+  struct porthw*p=porthw+pn;
+  struct portinfo*q=portinfo+pn;
+  PIO pio=p->pio;
+  int tsm=p->txsm;
+  int rsm=p->rxsm;
+  struct message*m=messages+pn;
+  int b,i,s,f0,f1,f2;
+
+  if(!pio_sm_is_tx_fifo_full(pio,tsm)) {
+    if(q->txptr>=0) {
+      pio_sm_put_blocking(pio,tsm,q->txbuf[q->txptr++]); // send next character
+      if(q->txptr==q->txlen) {                     // finished?
+        q->txptr=-1;
+        *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt now
+        }
+      }
+    else
+      *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt now
+    }
 //!!!  if(s&0x02) {                                     // framing error? this detects break condition
 //!!!    q->framingerrors++;
 //!!!DEB_SER    ostrnl("*FrE*");
@@ -369,107 +295,106 @@ int port_waitch(int pn) {
 //!!!    q->mstate=MS_MTYPE;
 //!!!    return;
 //!!!    }
-//!!!  if(s&0x20) {                                     // RX not empty?
-//!!!    b=u->DR;
-//!!!    m->check^=b;                                   // accumulate checksum
-//!!!//    GPIOD->ODR|=8;
-//!!!  DEB_SER  o2hex(b);
-//!!!  //  o1ch('<'); o2hex(b); osp();
-//!!!    switch(q->mstate) {
-//!!!  case MS_NOSYNC:
-//!!!  DEB_SER    o1ch('n');
-//!!!      if(tick-q->lasttick<100) break;              // wait for a pause
-//!!!      q->mstate=MS_MTYPE;
-//!!!      // and fall through
-//!!!  case MS_MTYPE:
-//!!!  DEB_SER    o1ch('t');
-//!!!      m->check=b;                                  // initialise checksum
-//!!!      f0=(b>>6)&3;                                 // split byte into three fields
-//!!!      f1=(b>>3)&7;
-//!!!      f2=(b>>0)&7;
-//!!!      m->type=b&0xc7;
-//!!!      m->cmd=0;
-//!!!      m->mode=0;
-//!!!      m->plen=0;
-//!!!      switch(f0) {                                 // examine top two bits
-//!!!    case 0:                                        // "system message"
-//!!!        switch(f2) {
-//!!!      case 0:
-//!!!      case 1:
-//!!!      case 2: // NACK
-//!!!      case 3:
-//!!!      case 6:
-//!!!      case 7:
-//!!!          break;                                   // SYNC-type messages ignored
-//!!!      case 4: // ACK
-//!!!  DEB_SER        ostr("ACK");
-//!!!          m->check=0xff;
-//!!!          goto complete;
-//!!!      case 5: // PRG
-//!!!          m->plen=1<<f1;
-//!!!          q->mstate=MS_CMD;
-//!!!          break;
-//!!!          }
-//!!!        break;
-//!!!    case 1:                                        // "command message"
-//!!!        m->plen=1<<f1;
-//!!!        q->mstate=MS_PAYLOAD;                      // no extra command byte in this case
-//!!!        break;
-//!!!    case 2:                                        // "info message"
-//!!!        m->mode=m->type&7;                         // move mode bits to "mode"
-//!!!        m->type&=~7;
-//!!!        m->plen=1<<f1;
-//!!!        q->mstate=MS_CMD;                          // command byte comes next
-//!!!        break;
-//!!!    case 3:                                        // "data message"
-//!!!        m->mode=m->type&7;                         // move mode bits to "mode"
-//!!!        m->type&=~7;
-//!!!        m->plen=1<<f1;
-//!!!        q->mstate=MS_PAYLOAD;                      // payload comes next
-//!!!        break;
-//!!!        }
-//!!!      break;
-//!!!  case MS_CMD:
-//!!!  DEB_SER    o1ch('c');
-//!!!      m->cmd=b;
-//!!!      m->mode|=(b>>2)&0x08;                        // extended mode bit
-//!!!      q->mstate=MS_PAYLOAD;
-//!!!      break;
-//!!!  default:
-//!!!  DEB_SER    o1ch('p');
-//!!!      if(q->mstate<(int)m->plen) {                 // mstate goes from 0 to plen-1 as payload bytes are read
-//!!!        m->payload[q->mstate++]=b;
-//!!!        break;
-//!!!        }
-//!!!  complete:
-//!!!      // here we have a complete message with checksum incorporated into m->check
-//!!!      if(m->check!=0xff) q->checksumerrors++;
-//!!!      else {                                       // if checksum OK add to message queue
-//!!!        i=(mqhead[pn]+1)%MQLEN;
-//!!!        if(i!=mqtail[pn]) {                        // discard on overrunning the message queue
-//!!!          memcpy((void*)&mqueue[pn][mqhead[pn]],m,sizeof(struct message));
-//!!!          mqhead[pn]=i;
-//!!!        } else {
-//!!!          ostrnl("MQ overrun!");                   // !!! consider trapping this
-//!!!          }
-//!!!        }
-//!!!      q->mstate=MS_MTYPE;                          // ready for next message
-//!!!      break;
-//!!!      }
-//!!!    q->lasttick=tick;
-//!!!    }
-//!!!//  GPIOD->ODR&=~8;
-//  }
+  if(!pio_sm_is_rx_fifo_empty(pio,rsm)) {         // RX not empty?
+    b=(int)*((io_rw_8*)&pio->rxf[rsm]+3);           // get byte
+    m->check^=b;                                   // accumulate checksum
+//    GPIOD->ODR|=8;
+  DEB_SER  o2hex(b);
+    switch(q->mstate) {
+  case MS_NOSYNC:
+  DEB_SER    o1ch('n');
+      if(gettick()-q->lasttick<100) break;              // wait for a pause
+      q->mstate=MS_MTYPE;
+      // and fall through
+  case MS_MTYPE:
+  DEB_SER    o1ch('t');
+      m->check=b;                                  // initialise checksum
+      f0=(b>>6)&3;                                 // split byte into three fields
+      f1=(b>>3)&7;
+      f2=(b>>0)&7;
+      m->type=b&0xc7;
+      m->cmd=0;
+      m->mode=0;
+      m->plen=0;
+      switch(f0) {                                 // examine top two bits
+    case 0:                                        // "system message"
+        switch(f2) {
+      case 0:
+      case 1:
+      case 2: // NACK
+      case 3:
+      case 6:
+      case 7:
+          break;                                   // SYNC-type messages ignored
+      case 4: // ACK
+  DEB_SER        ostr("ACK");
+          m->check=0xff;
+          goto complete;
+      case 5: // PRG
+          m->plen=1<<f1;
+          q->mstate=MS_CMD;
+          break;
+          }
+        break;
+    case 1:                                        // "command message"
+        m->plen=1<<f1;
+        q->mstate=MS_PAYLOAD;                      // no extra command byte in this case
+        break;
+    case 2:                                        // "info message"
+        m->mode=m->type&7;                         // move mode bits to "mode"
+        m->type&=~7;
+        m->plen=1<<f1;
+        q->mstate=MS_CMD;                          // command byte comes next
+        break;
+    case 3:                                        // "data message"
+        m->mode=m->type&7;                         // move mode bits to "mode"
+        m->type&=~7;
+        m->plen=1<<f1;
+        q->mstate=MS_PAYLOAD;                      // payload comes next
+        break;
+        }
+      break;
+  case MS_CMD:
+  DEB_SER    o1ch('c');
+      m->cmd=b;
+      m->mode|=(b>>2)&0x08;                        // extended mode bit
+      q->mstate=MS_PAYLOAD;
+      break;
+  default:
+  DEB_SER    o1ch('p');
+      if(q->mstate<(int)m->plen) {                 // mstate goes from 0 to plen-1 as payload bytes are read
+        m->payload[q->mstate++]=b;
+        break;
+        }
+  complete:
+      // here we have a complete message with checksum incorporated into m->check
+      if(m->check!=0xff) q->checksumerrors++;
+      else {                                       // if checksum OK add to message queue
+        i=(mqhead[pn]+1)%MQLEN;
+        if(i!=mqtail[pn]) {                        // discard on overrunning the message queue
+          memcpy((void*)&mqueue[pn][mqhead[pn]],m,sizeof(struct message));
+          mqhead[pn]=i;
+        } else {
+          ostrnl("MQ overrun!");                   // !!! consider trapping this
+          }
+        }
+      q->mstate=MS_MTYPE;                          // ready for next message
+      break;
+      }
+    q->lasttick=gettick();
+    }
+//  GPIOD->ODR&=~8;
+  }
 
 void port_sendmessage(int pn,unsigned char*buf,int l) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  struct portinfo*q=portinfo+pn;
-//!!!  if(l<1) return;
-//!!!  if(l>TXBLEN) l=TXBLEN;
-//!!!  while(q->txptr>=0) ;                             // wait for TX idle
-//!!!  memcpy((void*)q->txbuf,buf,l);
-//!!!  q->txptr=0;
-//!!!  q->txlen=l;
-//!!!  p->uart->CR1|=0x80;
+  struct porthw*p=porthw+pn;
+  struct portinfo*q=portinfo+pn;
+  if(l<1) return;
+  if(l>TXBLEN) l=TXBLEN;
+  while(q->txptr>=0) ;                             // wait for TX idle
+  memcpy((void*)q->txbuf,buf,l);
+  q->txptr=0;
+  q->txlen=l;
+  *p->inte=p->intb;  // both interrupts enabled
   }
 
