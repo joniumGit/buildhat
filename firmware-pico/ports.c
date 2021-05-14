@@ -8,8 +8,6 @@
 #include "hardware.h"
 #include "ports.h"
 
-// #include "pico/stdlib.h"
-
 #include "hardware/adc.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
@@ -96,6 +94,8 @@ static void port1_uart_irq() { port_uart_irq(1); }
 static void port2_uart_irq() { port_uart_irq(2); }
 static void port3_uart_irq() { port_uart_irq(3); }
 
+static int txprogoffset,rxprogoffset;
+
 void init_ports() {
   int i,j;
   struct porthw*p;
@@ -122,8 +122,8 @@ void init_ports() {
     p=porthw+i;
     gpio_init(p->pin_rts); gpio_set_dir(p->pin_rts,1); gpio_put(p->pin_rts,0);
     gpio_init(p->pin_dio); gpio_set_dir(p->pin_dio,0);
-    gpio_init(p->pin_rx ); gpio_set_dir(p->pin_rx ,1);
-    gpio_init(p->pin_tx ); gpio_set_dir(p->pin_tx ,1);
+    gpio_init(p->pin_rx ); gpio_set_dir(p->pin_rx ,0);
+    gpio_init(p->pin_tx ); gpio_set_dir(p->pin_tx ,0);
     }
   gpio_put(PIN_PORTON,1);                          // enable port power
 
@@ -154,48 +154,31 @@ void init_ports() {
       }
     }
 
-  const uint SERIAL_BAUD = 115200;
-  int txprog0=pio_add_program(pio0,&uart_tx_program);
-  int rxprog0=pio_add_program(pio0,&uart_rx_program);
-  int txprog1=pio_add_program(pio1,&uart_tx_program);
-  int rxprog1=pio_add_program(pio1,&uart_rx_program);
-
-  uart_tx_program_init(pio0,0,txprog0,porthw[0].pin_tx,SERIAL_BAUD); // SM 0 for tx
-  uart_rx_program_init(pio0,1,rxprog0,porthw[0].pin_rx,SERIAL_BAUD); // SM 1 for rx
-  uart_tx_program_init(pio0,2,txprog0,porthw[1].pin_tx,SERIAL_BAUD); // SM 2 for tx
-  uart_rx_program_init(pio0,3,rxprog0,porthw[1].pin_rx,SERIAL_BAUD); // SM 3 for rx
-  uart_tx_program_init(pio1,0,txprog1,porthw[2].pin_tx,SERIAL_BAUD); // SM 0 for tx
-  uart_rx_program_init(pio1,1,rxprog1,porthw[2].pin_rx,SERIAL_BAUD); // SM 1 for rx
-  uart_tx_program_init(pio1,2,txprog1,porthw[3].pin_tx,SERIAL_BAUD); // SM 2 for tx
-  uart_rx_program_init(pio1,3,rxprog1,porthw[3].pin_rx,SERIAL_BAUD); // SM 3 for rx
-
-  o8hex(pio0->sm[0].clkdiv); onl();
-  o8hex(pio0->sm[1].clkdiv); onl();
+  txprogoffset=pio_add_program(pio0,&uart_tx_program);
+  rxprogoffset=pio_add_program(pio0,&uart_rx_program);
+  assert(      pio_add_program(pio1,&uart_tx_program)==txprogoffset);
+  assert(      pio_add_program(pio1,&uart_rx_program)==txprogoffset);
 
   irq_set_exclusive_handler(PIO0_IRQ_0,port0_uart_irq);
   irq_set_exclusive_handler(PIO0_IRQ_1,port1_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_0,port2_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_1,port3_uart_irq);
-  irq_set_enabled(PIO0_IRQ_0,1);
-  irq_set_enabled(PIO0_IRQ_1,1);
-  irq_set_enabled(PIO1_IRQ_0,1);
-  irq_set_enabled(PIO1_IRQ_1,1);
 
   pio0->inte0=0x02; //0x12; // SM0 TXFNULL, SM1 RXNEMPTY
   pio0->inte1=0x08; //0x48; // SM2 TXFNULL, SM3 RXNEMPTY
   pio1->inte0=0x02; //0x12; // SM0 TXFNULL, SM1 RXNEMPTY
   pio1->inte1=0x08; //0x48; // SM2 TXFNULL, SM3 RXNEMPTY
 
-  while (true) {
-    uart_tx_program_puts(pio0,2,"Hi ");
-//    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
-    sleep_ms(300);
-    o1ch('.');
-    uart_tx_program_puts(pio0,2,"PIO!");
-//    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
-    sleep_ms(300);
-    o1ch(':');
-    }
+//  while (true) {
+//    uart_tx_program_puts(pio0,2,"Hi ");
+////    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
+//    sleep_ms(300);
+//    o1ch('.');
+//    uart_tx_program_puts(pio0,2,"PIO!");
+////    for(i=0;i<20;i++) o2hex(uart_rx_program_getc(pio, 1)); onl();
+//    sleep_ms(300);
+//    o1ch(':');
+//    }
 
 
 //  for(;;) {
@@ -211,36 +194,26 @@ void init_ports() {
 //    wait_ticks(100);
 //    }
 
-//  padsbank0_hw->io[29]=0x80; // disable OD and IE
-//  adc_hw->cs=(3<<12)|1;
-//  adc_hw->div=1<<16;
-//  adc_hw->cs|=8;
-
-  adc_init();
-  wait_ticks(100);
-  adc_select_input(ADC_CHAN);
-  wait_ticks(100);
-  adc_gpio_init(PIN_ADCVIN);
-  wait_ticks(100);
-  for(i=0;;i++) {
-    adc_hw->cs|=4;
-    wait_ticks(100);
-//    o8hex(padsbank0_hw->io[29]); osp();
-//    o8hex(adc_hw->cs); osp();
-//    o8hex(adc_hw->fcs); osp();
-    o8hex(adc_hw->result); onl();
-//    o8hex(adc_read()); onl(); // apparently only reads once!!!
-    gpio_put(PIN_LED0,i&1);
-    gpio_put(PIN_LED1,(i&2)>>1);
-    wait_ticks(100);
-//    adc_hw->cs|=4;
-//    wait_ticks(100);
-    }
-
-//!!!  for(i=0;i<NPORTS;i++) {
-//!!!    p=porthw+i;
-//!!!    gpio_out1(p->port_en ,p->pin_en );             // disable all drivers
-//!!!    }
+//   adc_init();
+//   wait_ticks(100);
+//   adc_select_input(ADC_CHAN);
+//   wait_ticks(100);
+//   adc_gpio_init(PIN_ADCVIN);
+//   wait_ticks(100);
+//   for(i=0;;i++) {
+//     adc_hw->cs|=4;
+//     wait_ticks(100);
+// //    o8hex(padsbank0_hw->io[29]); osp();
+// //    o8hex(adc_hw->cs); osp();
+// //    o8hex(adc_hw->fcs); osp();
+//     o8hex(adc_hw->result); onl();
+// //    o8hex(adc_read()); onl(); // apparently only reads once!!!
+//     gpio_put(PIN_LED0,i&1);
+//     gpio_put(PIN_LED1,(i&2)>>1);
+//     wait_ticks(100);
+// //    adc_hw->cs|=4;
+// //    wait_ticks(100);
+//     }
 
   port_initpwm(PWM_PERIOD_DEFAULT);
   }
@@ -268,11 +241,12 @@ void port_motor_brake(int pn) {
 // ========================== LPF2 port UARTs and ISRs =========================
 
 void port_setbaud(int pn,int baud) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  USART_TypeDef*u=p->uart;
-//!!!  if(baud<  2400) baud=  2400;
-//!!!  if(baud>115200) baud=115200;
-//!!!  u->BRR=(100000000/baud+1)/2;
+  struct porthw*p=porthw+pn;
+  if(baud<  2400) baud=  2400;
+  if(baud>115200) baud=115200;
+  float div=(float)clock_get_hz(clk_sys)/(8*baud)*65536.0;
+  p->pio->sm[p->txsm].clkdiv=((int)div)&~0xff;
+  p->pio->sm[p->rxsm].clkdiv=((int)div)&~0xff;
   }
 
 // message state machine
@@ -282,32 +256,70 @@ void port_setbaud(int pn,int baud) {
 #define MS_PAYLOAD  0
 
 void port_uarton(int pn) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  struct portinfo*q=portinfo+pn;
-//!!!  USART_TypeDef*u=p->uart;
-//!!!  gpio_out0(p->port_en ,p->pin_en );               // enable driver
-//!!!  gpio_afr(p->port_rx,p->pin_rx,p->uart_afn);      // enable UART functions on pins
-//!!!  gpio_afr(p->port_tx,p->pin_tx,p->uart_afn);
-//!!!  port_setbaud(pn,2400);
-//!!!  q->mstate=MS_NOSYNC;
+  struct porthw*p=porthw+pn;
+  struct portinfo*q=portinfo+pn;
+  PIO pio=p->pio;
+  int tsm=p->txsm;
+  int rsm=p->rxsm;
+  int txp=p->pin_tx;
+  int rxp=p->pin_rx;
+  pio_sm_config c;
+  float div=(float)clock_get_hz(clk_sys)/(8*2400);   // SMs transmit 1 bit per 8 execution cycles; dummy baud rate
+
+// TX init
+  pio_sm_set_pins_with_mask(pio,tsm,1<<txp,1<<txp);    // tell PIO to initially drive output-high on the selected pin, then map PIO
+  pio_sm_set_pindirs_with_mask(pio,tsm,1<<txp,1<<txp); // onto that pin with the IO muxes
+  pio_gpio_init(pio,txp);
+  c=uart_tx_program_get_default_config(txprogoffset);
+  sm_config_set_out_shift(&c,true,false,32);          // OUT shifts to right, no autopull
+
+  sm_config_set_out_pins(&c, txp, 1);   // we map both OUT and side-set to the same pin, because sometimes we need to assert
+  sm_config_set_sideset_pins(&c, txp);  // user data onto the pin (with OUT) and sometimes constant values (start/stop bit)
+  sm_config_set_clkdiv(&c,div);
+
+  pio_sm_init(pio,tsm,txprogoffset,&c);
+  pio_sm_set_enabled(pio,tsm,true);
+
+// RX init
+  pio_sm_set_consecutive_pindirs(pio,rsm,rxp,1,false);
+  pio_gpio_init(pio,rxp);
+  gpio_pull_up(rxp);
+
+  c=uart_rx_program_get_default_config(rxprogoffset);
+  sm_config_set_in_pins(&c,rxp); // for WAIT, IN
+  sm_config_set_jmp_pin(&c,rxp); // for JMP
+  sm_config_set_in_shift(&c, true, false, 32); // shift to right, autopull disabled
+  sm_config_set_clkdiv(&c,div);
+
+  q->mstate=MS_NOSYNC;
 //!!!  q->lasttick=tick;
-//!!!  q->framingerrors=0;
-//!!!  q->checksumerrors=0;
-//!!!  q->txptr=-1;
-//!!!  q->txlen=0;
-//!!!  u->CR1=0x202c;                                   // enable USART, TX and RX, TX and RX interrupts
+  q->framingerrors=0;
+  q->checksumerrors=0;
+  q->txptr=-1;
+  q->txlen=0;
+
+  pio_sm_init(pio,rsm,rxprogoffset,&c);
+  pio_sm_set_enabled(pio,rsm,true);
+  irq_set_enabled(p->irq,1);
   }
 
 void port_uartoff(int pn) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  struct portinfo*q=portinfo+pn;
-//!!!  USART_TypeDef*u=p->uart;
-//!!!  u->CR1=0;                                        // disable USART, TX and RX, interrupts
-//!!!  gpio_in  (p->port_rx ,p->pin_rx );               // return pins to normal functions
-//!!!  gpio_in  (p->port_tx ,p->pin_tx );
-//!!!  gpio_out1(p->port_en ,p->pin_en );               // disable driver
-//!!!  q->mstate=MS_NOSYNC;
-//!!!  q->txptr=-1;
+  struct porthw*p=porthw+pn;
+  struct portinfo*q=portinfo+pn;
+  PIO pio=p->pio;
+  int tsm=p->txsm;
+  int rsm=p->rxsm;
+  int txp=p->pin_tx;
+  int rxp=p->pin_rx;
+
+  pio_sm_set_enabled(pio,tsm,false);
+  pio_sm_set_enabled(pio,rsm,false);
+  gpio_init(txp); gpio_set_dir(txp,0);
+  gpio_init(rxp); gpio_set_dir(rxp,0);
+  irq_set_enabled(p->irq,0);
+
+  q->mstate=MS_NOSYNC;
+  q->txptr=-1;
   }
 
 void port_putch(int pn,int c) {

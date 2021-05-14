@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "hardware/i2c.h"
+#include "hardware/irq.h"
 #include "hardware/pio.h"
 
 #define NPORTS 4
@@ -16,6 +17,7 @@ extern struct porthw {
   PIO pio;
   int txsm;
   int rxsm;
+  int irq;
   } porthw[NPORTS];
 
 // control UART
