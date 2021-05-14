@@ -27,43 +27,48 @@ struct message messages[NPORTS];
 volatile struct message mqueue[NPORTS][MQLEN];
 volatile int mqhead[NPORTS],mqtail[NPORTS];        // if head==tail then the queue is empty
 
-void port_initpwm(unsigned int period) {
-//!!!
-//  struct porthw*p;
-//  int i,j;
-//  pwm_period=period;
-//  for(i=0;i<NPORTS;i++) {
-//    for(j=0;j<i;j++)
-//      if(porthw[i].timer==porthw[j].timer)         // have we already initialised this one?
-//        goto skip;                                 // then don't do it again
-//    porthw[i].timer->CR1=0x00;                     // non-buffered ARR, edge-aligned PWM, disabled
-//    porthw[i].timer->CCMR1=0x6868;                 // ch1, ch2 configured as PWM outputs, preload enabled
-//    porthw[i].timer->CCMR2=0x6868;                 // ch3, ch4 configured as PWM outputs, preload enabled
-//    porthw[i].timer->CCER=0x3333;                  // enable all outputs, all inverted
-//    porthw[i].timer->ARR=period-1;
-//    porthw[i].timer->CCR1=0;                       // set all outputs to 0%
-//    porthw[i].timer->CCR2=0;
-//    porthw[i].timer->CCR3=0;
-//    porthw[i].timer->CCR4=0;
-//    porthw[i].timer->BDTR=0x8000;                  // main output enable (only on "advanced" timer; writing
-//                                                   // does not seem to cause harm on general-purpose timer)
-//    porthw[i].timer->CR1=0x01;                     // non-buffered ARR, edge-aligned PWM, enabled
-//    porthw[i].timer->EGR=1;                        // set UG bit to load registers
-//skip: ;
-//    }
-//  for(i=0;i<NPORTS;i++) {
-//    p=porthw+i;
-//    gpio_afr(p->port_in1,p->pin_in1,p->tim_afn);   // set up all PWM outputs
-//    gpio_afr(p->port_in2,p->pin_in2,p->tim_afn);
-//    }
-  }
-
 static int port_readi2cbyte(int p,int b) {
   UC t;
   t=b;
   if(i2c_write_blocking(porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
   if(i2c_read_blocking (porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
   return t;
+  }
+
+// set PWM values according to pwm:
+// -1 full power reverse
+// +1 full power forwards
+void port_set_pwm(int pn,float pwm) {
+  struct porthw*p=porthw+pn;
+  int u;
+  UC t[3];
+  CLAMP(pwm,-1,1);
+  u=(int)(pwm*pwm_period+0.5);
+  if(u<0) u=0; // one direction for now
+  o4hex(u);
+  t[0]=0x7f;
+  t[1]=u&0xff;
+  t[2]=(u>>8)&0xff;
+  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
+  }
+
+void port_motor_brake(int pn) {
+//!!!  struct porthw*p=porthw+pn;
+//!!!  *(p->tccr1)=pwm_period;
+//!!!  *(p->tccr2)=pwm_period;
+  }
+
+void port_initpwm(unsigned int period) {
+  struct porthw*p;
+  int i,j;
+  UC t[2];
+  pwm_period=period;
+  for(i=0;i<NPORTS;i++) {
+    p=porthw+i;
+    t[0]=0x4c;
+    t[1]=0x7f;
+    i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+    }
   }
 
 unsigned int port_state56(int pn) {
@@ -93,7 +98,6 @@ void init_ports() {
   gpio_init(PIN_PORTFAULT ); gpio_set_dir(PIN_PORTFAULT ,0); gpio_pull_up(PIN_PORTFAULT);
   gpio_init(PIN_PORTON    ); gpio_set_dir(PIN_PORTON    ,1); gpio_put(PIN_PORTON,0);
   gpio_init(PIN_MOTORFAULT); gpio_set_dir(PIN_MOTORFAULT,0); gpio_pull_up(PIN_MOTORFAULT);
-//!!!  gpio_set_dir(PIN_ADCVIN    ,1);
   i2c_init(i2c0,100000);
   i2c_init(i2c1,100000);
   gpio_set_function(PIN_I2C0_SDA,GPIO_FUNC_I2C);
@@ -151,27 +155,14 @@ void init_ports() {
   irq_set_exclusive_handler(PIO1_IRQ_0,port2_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_1,port3_uart_irq);
 
-//!!!  port_initpwm(PWM_PERIOD_DEFAULT);
-  }
-
-// set PWM values according to pwm:
-// -1 full power reverse
-// +1 full power forwards
-void port_set_pwm(int pn,float pwm) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  int u;
-//!!!  CLAMP(pwm,-1,1);
-//!!!  u=(int)(pwm*pwm_period+0.5);
-//!!!  p->timer->CR1|=0x02;                             // disable updates while we write to the registers to avoid glitches
-//!!!  if(u<0) *(p->tccr1)=0, *(p->tccr2)=-u;
-//!!!  else    *(p->tccr2)=0, *(p->tccr1)= u;
-//!!!  p->timer->CR1&=~0x02;                            // re-enable updates
-  }
-
-void port_motor_brake(int pn) {
-//!!!  struct porthw*p=porthw+pn;
-//!!!  *(p->tccr1)=pwm_period;
-//!!!  *(p->tccr2)=pwm_period;
+  port_initpwm(PWM_PERIOD_DEFAULT);
+  for(;;) {
+    for(i=0;i<10;i++) {
+      port_set_pwm(1,i/1000.0);
+      wait_ticks(300);
+      o1ch('.');
+      }
+    }
   }
 
 // ========================== LPF2 port UARTs and ISRs =========================
