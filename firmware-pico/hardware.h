@@ -35,6 +35,7 @@ extern struct porthw {
 // pins connected to LEDs: LED0 is red, LED1 is green
 #define PIN_LED0       14
 #define PIN_LED1       15
+
 #define PIN_PORTFAULT  16                            // +3V3 to the ports overloaded; needs pullup
 #define PIN_PORTON     17                            // enable +3V3 to the ports
 #define PIN_MOTORFAULT 28                            // motor fault (wire-OR); needs pullup
@@ -45,5 +46,8 @@ extern struct porthw {
 #define PIN_I2C0_SCL    9
 #define PIN_I2C1_SDA   18
 #define PIN_I2C1_SCL   19
+
+#define PIN_DEBUG0 2
+#define PIN_DEBUG1 3
 
 #define GPIO_READ(pin) (!!gpio_get(pin))

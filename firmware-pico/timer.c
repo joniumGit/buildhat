@@ -1,7 +1,5 @@
 #include "common.h"
-#include "system.h"
 #include "hardware.h"
-#include "leds.h"
 #include "pico/stdlib.h"
 #include "hardware/adc.h"
 

@@ -8,18 +8,13 @@
 // (non-working) example for speed PID:
 // port 1 ; pid 1 1 0 s1 1 0 0.1 0 0 3
 
-#include "stm32f413xx.h"
 #include <string.h>
 #include "common.h"
 #include "debug.h"
-#include "system.h"
-#include "gpio.h"
 #include "ioconv.h"
-#include "adc.h"
 #include "timer.h"
 #include "hardware.h"
 #include "ports.h"
-#include "leds.h"
 #include "control.h"
 #include "device.h"
 #include "pwm_pid.h"
@@ -52,9 +47,9 @@ void go() {
     }
   memset(timers,0,sizeof(timers));
   memset(counters,0,sizeof(counters));
-  t0=tick;
+  t0=gettick();
   for(;;) {
-    deltat=tick-t0;                                // milliseconds since we were last here
+    deltat=gettick()-t0;                           // milliseconds since we were last here
     if(deltat>2) {                                 // normally this will be 0 or 1
       ostr("deltat="); o8hex(deltat); onl();
       }
@@ -283,13 +278,9 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
 // =================================== main() ==================================
 
 int main() {
-  init_data_bss();
-  init_sys();
-  init_gpio();
-  init_adc();
   init_timer();
-  init_ports();
   init_control();
+  init_ports();
 
   go();
 

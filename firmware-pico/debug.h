@@ -1,8 +1,6 @@
 #pragma once
 
-// #define DEBUG_PINS                                 // use MCU_CTS and MCU_RTS as debug signals
-// #define DEBUG_BAUD 3000000
-// #define DEBUG_BAUD 115200
+#define DEBUG_PINS                                 // use MCU_CTS and MCU_RTS as debug signals
 
 extern int debug;
 #define DEB_SER if(debug&(1<<0))                   // serial port debug
