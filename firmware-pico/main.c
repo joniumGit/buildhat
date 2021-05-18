@@ -58,78 +58,63 @@ void go() {
       struct devinfo*d=devinfo+i;
       struct porthw*p=porthw+i;
       struct portinfo*q=portinfo+i;
+      int pin_a,pin_b;
       if(deltat) {
         delay[i]-=deltat;
         for(j=0;j<NTIMERS;j++) timers[i][j]+=deltat;
         }
       if(delay[i]>0) continue;                     // skip processing while we are delaying
       delay[i]=0;
+      if(i!=1) continue; //!!!
+      o1ch('<'); odec(state[i]); o1ch('>');
       switch(state[i]) {
     case 0:
         d->signature=0;
         counters[i][0]=0;
-        gpio_inpu(p->port_d5,p->pin_d5);           // enable pull-ups to mitigate effect of RS-485 driver output resistance
-        gpio_in  (p->port_rx,p->pin_rx);
         state[i]++;
     case 1:
-        switch(counters[i][0]/3) {
-      case 0:
-        gpio_out1(p->port_tx,p->pin_tx);
-        gpio_out0(p->port_en,p->pin_en);           // enable pin 5 driver, pull high
-        break;
-      case 1:
-        gpio_out1(p->port_en,p->pin_en);           // disable pin 5 driver
-        break;
-      case 2:
-        gpio_out0(p->port_tx,p->pin_tx);
-        gpio_out0(p->port_en,p->pin_en);           // enable pin 5 driver, pull low
-        break;
+        if(counters[i][0]<4) pin_a=p->pin_tx,pin_b=p->pin_rx;
+        else                 pin_a=p->pin_rx,pin_b=p->pin_tx;
+        gpio_set_dir(pin_a,0);
+        gpio_disable_pulls(pin_a);
+        switch(counters[i][0]%4) {
+      case 0: gpio_set_dir(pin_b,1); gpio_put(pin_b,0);     break; // output L
+      case 1: gpio_set_dir(pin_b,0); gpio_pull_down(pin_b); break; // input, pull-down
+      case 2: gpio_set_dir(pin_b,0); gpio_pull_up(pin_b);   break; // input, pull-up
+      case 3: gpio_set_dir(pin_b,1); gpio_put(pin_b,1);     break; // output H
           }
-        switch(counters[i][0]%3) {
-      case 0:
-        gpio_out1(p->port_d6,p->pin_d6);
-        break;
-      case 1:
-        gpio_inpu(p->port_d6,p->pin_d6);
-        break;
-      case 2:
-        gpio_out0(p->port_d6,p->pin_d6);
-        break;
-          }
-        delay[i]=2;                                // at least 2ms for settling; pin 5 stays in each state for 6ms, so cannot
-                                                   // generate a valid character
+        delay[i]=10;                               // at least 6ms for settling, so we cannot generate a valid character
         state[i]++;
         break;
     case 2:
-        d->signature|=GPIO_READ(p->port_d5,p->pin_d5)<< counters[i][0];
-        d->signature|=GPIO_READ(p->port_rx,p->pin_rx)<<(counters[i][0]+12);
+        u=port_state56(i);
+        if(u&1) d->signature|=0x001<<counters[i][0];
+        if(u&2) d->signature|=0x100<<counters[i][0];
         counters[i][0]++;
-        if(counters[i][0]<9) state[i]--;
+        if(counters[i][0]<8) state[i]--;
         else                 state[i]++;
         break;
     case 3:
-        gpio_out1(p->port_en,p->pin_en);           // disable driver
-        gpio_in  (p->port_d5,p->pin_d5);
-        gpio_in  (p->port_d6,p->pin_d6);
-DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o8hex(d->signature); }
-        if((d->signature&0xfff)==0x024)            // for ID 11 the logic levels on the RX buffer input are marginal
-          d->signature &=0xfff;                    // so ignore it
+        gpio_set_dir(pin_a,0);
+        gpio_set_dir(pin_b,0);
+DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o4hex(d->signature); }
+        if((d->signature&0xff)==0xcf) d->signature=0x00cf;
         switch(d->signature) {
       default:
-      case 0x000f303f: id= 0; break;               // nothing connected
-      case 0x00038007: id= 1; break;               // System medium motor
-      case 0x000381ff: id= 2; break;               // System train motor
-      case 0x001c7000: id= 3; break;               // System turntable motor
-      case 0x00038000: id= 4; break;               // general PWM/third party
-      case 0x0003f01f:                             // button/touch sensor not pressed
-      case 0x0003f00f: id= 5; break;               // button/touch sensor pressed
-      case 0x001ff1ff: id= 6; break;               // Technic large motor
-      case 0x001c7007: id= 7; break;               // Technic XL motor (note that some have active ID!)
-      case 0x000e3007: id= 8; break;               // simple lights
-      case 0x000fb1ff: id= 9; break;               // Future lights 1
-      case 0x000c3000: id=10; break;               // Future lights 2
-      case 0x00000024: id=11; break;               // System future actuator (train points) (signature is 0x00061024)
-      case 0x0003803f: id=99; break;               // FLOAT/GND: potentially an active ID
+      case 0x0cc0: id= 0; break;               // nothing connected
+      case 0x0080: id= 1; break;               // System medium motor
+      case 0x00ff: id= 2; break;               // System train motor
+      case 0xff00: id= 3; break;               // System turntable motor
+      case 0x0000: id= 4; break;               // general PWM/third party
+      case 0xcccc:                             // button/touch sensor not pressed
+      case 0x8888: id= 5; break;               // button/touch sensor pressed
+      case 0xffff: id= 6; break;               // Technic large motor
+      case 0xff80: id= 7; break;               // Technic XL motor (note that some have active ID!)
+      case 0x0c80: id= 8; break;               // simple lights
+      case 0x0cff: id= 9; break;               // Future lights 1
+      case 0x0c00: id=10; break;               // Future lights 2
+      case 0x08c0: id=11; break;               // System future actuator (train points)
+      case 0x00cf: id=99; break;               // potentially an active ID
           }
 DEB_SIG        { ostr(" id="); odec(id); onl(); }
         if(id==99) {
@@ -155,20 +140,19 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         d->connected=1;                            // we have 5 matching IDs, so mark as connected
         if(id==5) {                                // button/touch sensor?
           delay[i]=0;                              // then reinterrogate quickly to respond better to presses
-          d->buttonpressed=(d->signature==0x003f00f);
+          d->buttonpressed=(d->signature==0xcccc);
           }
         break;
 
 // ============================== ACTIVE ID PROCESSING =========================
 
     case 90:                                       // here we may have an active ID to detect
-        gpio_in  (p->port_d5,p->pin_d5);
-        gpio_inpu(p->port_d6,p->pin_d6);
+        gpio_set_dir(p->pin_rx,0); gpio_pull_up(p->pin_rx);
         timers[i][1]=0;
         state[i]++;
         break;
     case 91:
-        if(GPIO_READ(p->port_d6,p->pin_d6)==1) {   // look to see RXD held low for 100ms
+        if(gpio_get(p->pin_rx)==1) {   // look to see RXD held low for 100ms
           state[i]=0;
           break;
           }
@@ -198,6 +182,7 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             }
           if(timers[i][1]>2000) {
             o1ch('P'); o1hex(i); ostrnl(": timeout during setup phase: disconnecting");
+            port_uartoff(i);
             state[i]=0;
             }
           }

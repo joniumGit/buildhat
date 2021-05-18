@@ -38,10 +38,22 @@ static int port_readi2cbyte(int p,int b) {
 static void port_set_pwm_int(int pn,int pwm) {
   struct porthw*p=porthw+pn;
   UC t[3];
+  if(pwm<0) {
+    pwm=-pwm; //!!!
+    }
+  if(pwm==0) {
+    t[0]=0x4c;
+    t[1]=0x6f; // disable PWM
+    i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+    return;
+    }
+  t[0]=0x4c;
+  t[1]=0x7f; // enable PWM
+  i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
   t[0]=0x7f;
   t[1]=pwm&0xff;
   t[2]=(pwm>>8)&0xff;
-  i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
   }
 
 // set PWM values according to pwm:
@@ -53,12 +65,7 @@ void port_set_pwm(int pn,float pwm) {
   UC t[3];
   CLAMP(pwm,-1,1);
   u=(int)(pwm*pwm_period+0.5);
-  if(u<0) u=0; // one direction for now
-  o4hex(u);
-  t[0]=0x7f;
-  t[1]=u&0xff;
-  t[2]=(u>>8)&0xff;
-  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
+  port_set_pwm_int(pn,u);
   }
 
 void port_motor_brake(int pn) {
@@ -72,9 +79,7 @@ void port_initpwm(unsigned int period) {
   pwm_period=period;
   for(i=0;i<NPORTS;i++) {
     p=porthw+i;
-    t[0]=0x4c; // enable PWM
-    t[1]=0x7f;
-    i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+    port_set_pwm_int(i,0);
     t[0]=0x86; // period ~ 256 clocks
     t[1]=0x3f;
     i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
@@ -95,17 +100,23 @@ void port_resetdriver(int pn) {
   i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
   }
 
-void port_setpin6(int pn,int s) {
+void port_initdriver(int pn) {
   struct porthw*p=porthw+pn;
-  UC t[3]={0x07,driverdata[pn][0x07],driverdata[pn][0x08]};
-  t[2]=0; t[1]&=0x0f;
-  switch(s) {
-case 0: t[2]|=0xfc; t[1]|=0x00; break;
-case 1: t[2]|=0x00; t[1]|=0x00; break;
-case 2: t[2]|=0xff; t[1]|=0xf0; break;
-    }
+  UC t[3]={0x6a,0x00,0x00}; // disable pull-ups/downs
   i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
   }
+
+//void port_setpin6(int pn,int s) {
+//  struct porthw*p=porthw+pn;
+//  UC t[3]={0x07,driverdata[pn][0x07],driverdata[pn][0x08]};
+//  t[2]=0; t[1]&=0x0f;
+//  switch(s) {
+//case 0: t[2]|=0xfc; t[1]|=0x00; break;
+//case 1: t[2]|=0x00; t[1]|=0x00; break;
+//case 2: t[2]|=0xff; t[1]|=0xf0; break;
+//    }
+//  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
+//  }
 
 static void port_uart_irq(int pn);
 
@@ -143,8 +154,8 @@ void init_ports() {
     gpio_init(p->pin_dio); gpio_set_dir(p->pin_dio,0);
     gpio_init(p->pin_rx ); gpio_set_dir(p->pin_rx ,0);
     gpio_init(p->pin_tx ); gpio_set_dir(p->pin_tx ,0);
-    padsbank0_hw->io[p->pin_rx]&=~0x30; // drive strength 2mA
-    padsbank0_hw->io[p->pin_tx]&=~0x30;
+//    padsbank0_hw->io[p->pin_rx]&=~0x30; // drive strength 2mA
+//    padsbank0_hw->io[p->pin_tx]&=~0x30;
     }
   gpio_put(PIN_PORTON,1);                          // enable port power
 #ifdef DEBUG_PINS
@@ -153,20 +164,20 @@ void init_ports() {
 #endif
 
   wait_ticks(100);
-  ostrnl("Checking I²C0:");
-  for(i=0x08;i<0x80;i++) {
-    unsigned char t;
-    if(i%8==0) { o2hex(i); osp(); }
-    if(i2c_read_blocking(i2c0,i,&t,1,0)==-2) o1ch('.'); else o1ch('+'); osp();
-    if(i%8==7) onl();
-    }
-  ostrnl("Checking I²C1:");
-  for(i=0x08;i<0x80;i++) {
-    if(i%8==0) { o2hex(i); osp(); }
-    unsigned char t;
-    if(i2c_read_blocking(i2c1,i,&t,1,0)==-2) o1ch('.'); else o1ch('+'); osp();
-    if(i%8==7) onl();
-    }
+//  ostrnl("Checking I²C0:");
+//  for(i=0x08;i<0x80;i++) {
+//    unsigned char t;
+//    if(i%8==0) { o2hex(i); osp(); }
+//    if(i2c_read_blocking(i2c0,i,&t,1,0)==-2) o1ch('.'); else o1ch('+'); osp();
+//    if(i%8==7) onl();
+//    }
+//  ostrnl("Checking I²C1:");
+//  for(i=0x08;i<0x80;i++) {
+//    if(i%8==0) { o2hex(i); osp(); }
+//    unsigned char t;
+//    if(i2c_read_blocking(i2c1,i,&t,1,0)==-2) o1ch('.'); else o1ch('+'); osp();
+//    if(i%8==7) onl();
+//    }
 
   ostrnl("Resetting drivers");
   for(i=0;i<NPORTS;i++) port_resetdriver(i);
@@ -174,14 +185,16 @@ void init_ports() {
 
   ostrnl("Reading driver dumps");
   for(i=0;i<NPORTS;i++) {
-    ostr("Port "); odec(i); onl();
+//    ostr("Port "); odec(i); onl();
     for(j=0;j<DRIVERBYTES;j++) {
       driverdata[i][j]=port_readi2cbyte(i,j);
-      o2hex(driverdata[i][j]);
-      if(j%16==15) onl();
-      else         osp();
+//      o2hex(driverdata[i][j]);
+//      if(j%16==15) onl();
+//      else         osp();
       }
     }
+
+  for(i=0;i<NPORTS;i++) port_initdriver(i);
 
   txprogoffset=pio_add_program(pio0,&uart_tx_program);
   rxprogoffset=pio_add_program(pio0,&uart_rx_program);
@@ -204,61 +217,42 @@ void init_ports() {
 //    }
 
 
-//        switch(counters[i][0]/3) {
-//      case 0:
-//        gpio_out1(p->port_tx,p->pin_tx);
-//        gpio_out0(p->port_en,p->pin_en);           // enable pin 5 driver, pull high
-//        break;
-//      case 1:
-//        gpio_out1(p->port_en,p->pin_en);           // disable pin 5 driver
-//        break;
-//      case 2:
-//        gpio_out0(p->port_tx,p->pin_tx);
-//        gpio_out0(p->port_en,p->pin_en);           // enable pin 5 driver, pull low
-//        break;
-//          }
-//        switch(counters[i][0]%3) {
-//      case 0:
-//        gpio_out1(p->port_d6,p->pin_d6);
-//        break;
-//      case 1:
-//        gpio_inpu(p->port_d6,p->pin_d6);
-//        break;
-//      case 2:
-//        gpio_out0(p->port_d6,p->pin_d6);
-//        break;
-//          }
+//  for(;;) {
+//    struct porthw*p=porthw+1;
+//    int s0=0,s1=0,u;
+//    for(i=0;i<4;i++) {
+//      gpio_put(PIN_DEBUG0,i==0);
+//      gpio_set_dir(p->pin_rx,0);
+//      gpio_disable_pulls(p->pin_rx);
+//      switch(i) {
+//    case 0: gpio_set_dir(p->pin_tx,1); gpio_put(p->pin_tx,0);     break;
+//    case 1: gpio_set_dir(p->pin_tx,0); gpio_pull_down(p->pin_tx); break;
+//    case 2: gpio_set_dir(p->pin_tx,0); gpio_pull_up(p->pin_tx);   break;
+//    case 3: gpio_set_dir(p->pin_tx,1); gpio_put(p->pin_tx,1);     break;
+//        }
+//      wait_ticks(10);
+//      u=port_state56(1);
+//      if(u&1) s0|=1<<i;
+//      if(u&2) s1|=1<<i;
+//      }
+//    for(i=0;i<4;i++) {
+//      gpio_set_dir(p->pin_tx,0);
+//      gpio_disable_pulls(p->pin_tx);
+//      switch(i) {
+//    case 0: gpio_set_dir(p->pin_rx,1); gpio_put(p->pin_rx,0);     break;
+//    case 1: gpio_set_dir(p->pin_rx,0); gpio_pull_down(p->pin_rx); break;
+//    case 2: gpio_set_dir(p->pin_rx,0); gpio_pull_up(p->pin_rx);   break;
+//    case 3: gpio_set_dir(p->pin_rx,1); gpio_put(p->pin_rx,1);     break;
+//        }
+//      wait_ticks(10);
+//      u=port_state56(1);
+//      if(u&1) s0|=0x10<<i;
+//      if(u&2) s1|=0x10<<i;
+//      }
+//
+//    o2hex(s0); osp(); o2hex(s1); onl();
+//    }
 
-
-  for(;;) {
-    struct porthw*p=porthw+1;
-    int s=0,m=1,u;
-    for(i=0;i<3;i++) {
-      gpio_put(PIN_DEBUG0,i==0);
-      switch(i) {
-    case 0: gpio_set_dir(p->pin_tx ,1); gpio_put(p->pin_tx ,1); break;
-    case 1: gpio_set_dir(p->pin_tx ,0);                         break;
-    case 2: gpio_set_dir(p->pin_tx ,1); gpio_put(p->pin_tx ,0); break;
-        }
-      for(j=0;j<3;j++) {
-        switch(j) {
-      case 0: gpio_set_dir(p->pin_rx,1); gpio_put(p->pin_rx,1);   break;
-      case 1: gpio_set_dir(p->pin_rx,0); gpio_pull_up(p->pin_rx); break;
-      case 2: gpio_set_dir(p->pin_rx,1); gpio_put(p->pin_rx,0);   break;
-          }
-//        port_setpin6(1,i);
-        wait_ticks(10);
-        u=port_state56(1);
-        o1hex(u);
-        if(u&1) s|=m;
-        if(u&2) s|=m<<12;
-        m<<=1;
-        }
-      osp();
-      }
-    o8hex(s);
-    onl();
-    }
   }
 
 // ========================== LPF2 port UARTs and ISRs =========================
@@ -322,7 +316,12 @@ void port_uarton(int pn) {
   q->txlen=0;
 
   pio_sm_init(pio,rsm,rxprogoffset,&c);
-  *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt for now
+  switch(pn) { //!!! this is not very elegant
+case 0:pio0->inte0=0x12; break;
+case 1:pio0->inte1=0x48; break;
+case 2:pio1->inte0=0x12; break;
+case 3:pio1->inte1=0x48; break;
+    }
   pio_sm_set_enabled(pio,rsm,true);
   irq_set_enabled(p->irq,1);
   }
@@ -341,8 +340,12 @@ void port_uartoff(int pn) {
   gpio_init(txp); gpio_set_dir(txp,0);
   gpio_init(rxp); gpio_set_dir(rxp,0);
   irq_set_enabled(p->irq,0);
-  p->inte=0;
-
+  switch(pn) { //!!! this is not very elegant
+case 0:pio0->inte0=0; break;
+case 1:pio0->inte1=0; break;
+case 2:pio1->inte0=0; break;
+case 3:pio1->inte1=0; break;
+    }
   q->mstate=MS_NOSYNC;
   q->txptr=-1;
   }

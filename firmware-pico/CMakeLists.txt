@@ -9,12 +9,15 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 add_executable(test
-  test.c
+#  test.c
+  main.c
   control.c
   command.c
   debug.c
+  device.c
   hardware.c
   ioconv.c
+  message.c
   ports.c
   pwm_pid.c
   timer.c
