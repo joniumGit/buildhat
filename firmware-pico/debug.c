@@ -1,3 +1,3 @@
 #include "common.h"
 
-int debug=0xffffffff; //!!!
+int debug=0;

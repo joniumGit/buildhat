@@ -3,7 +3,7 @@
 #define DRIVERBYTES 256                            // driver configuration bits address space
 
 #define TXBLEN 132                                 // maximum message length
-#define PWM_PERIOD_DEFAULT 1024                    // in units of 40ns (25MHz)
+#define PWM_PERIOD_DEFAULT 256                     // in units of 40ns (25MHz)
 extern unsigned int pwm_period;
 
 extern struct portinfo {
@@ -15,6 +15,7 @@ extern struct portinfo {
   volatile int txptr;                              // current index into buffer; -1 for idle
   volatile int txlen;                              // buffer length
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled
+  int lastpwm;                                     // integer value to which PWM was last set
   float setpoint;                                  // PID/direct PWM setpoint
   int spwaveshape;                                 // set point wave generator
   float spwavemin;

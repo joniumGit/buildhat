@@ -7,7 +7,7 @@
 #include "debug.h"
 #include "control.h"
 
-float pid_drive_limit=0.5;
+float pid_drive_limit=0.1;
 
 static const float sintab[256]={
    0.00000, 0.02454, 0.04907, 0.07356, 0.09802, 0.12241, 0.14673, 0.17096,

@@ -34,26 +34,35 @@ static int port_readi2cbyte(int p,int b) {
   return t;
   }
 
+static inline void port_set_pwmflags(int pn,int f) {
+  UC t[2]={0x4c,f};
+  struct porthw*p=porthw+pn;
+  i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+  }
+
+static inline void port_set_pwmamount(int pn,int a) {
+  UC t[3]={0x7f,a&0xff,a>>8};
+  struct porthw*p=porthw+pn;
+  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
+  }
+
 // set PWM values as integer
 static void port_set_pwm_int(int pn,int pwm) {
   struct porthw*p=porthw+pn;
+  struct portinfo*q=portinfo+pn;
   UC t[3];
-  if(pwm<0) {
-    pwm=-pwm; //!!!
-    }
+  int lpwm=q->lastpwm;
+  if(pwm==lpwm) return;
+  q->lastpwm=pwm;
   if(pwm==0) {
-    t[0]=0x4c;
-    t[1]=0x6f; // disable PWM
-    i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+    port_set_pwmflags(pn,0x6f); // disable PWM
+    port_set_pwmamount(pn,1); // minimum amount
     return;
     }
-  t[0]=0x4c;
-  t[1]=0x7f; // enable PWM
-  i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
-  t[0]=0x7f;
-  t[1]=pwm&0xff;
-  t[2]=(pwm>>8)&0xff;
-  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
+  if(abs(lpwm)>abs(pwm)) port_set_pwmamount(pn,abs(pwm)); // amount reducing in absolute terms? then set it first
+  if(pwm< 0&&lpwm>=0) port_set_pwmflags(pn,0x5f); // enable, -ve direction
+  if(pwm>=0&&lpwm<=0) port_set_pwmflags(pn,0x7f); // enable, +ve direction
+  if(abs(lpwm)<=abs(pwm)) port_set_pwmamount(pn,abs(pwm)); // amount increasing in absolute terms? then set it last
   }
 
 // set PWM values according to pwm:
@@ -79,6 +88,7 @@ void port_initpwm(unsigned int period) {
   pwm_period=period;
   for(i=0;i<NPORTS;i++) {
     p=porthw+i;
+    portinfo[i].lastpwm=0x7fffffff; // dummy value
     port_set_pwm_int(i,0);
     t[0]=0x86; // period ~ 256 clocks
     t[1]=0x3f;
@@ -369,7 +379,9 @@ static void port_uart_irq(int pn) {
 
   if(!pio_sm_is_tx_fifo_full(pio,tsm)) {
     if(q->txptr>=0) {
+      gpio_put(PIN_DEBUG0,1);
       pio_sm_put_blocking(pio,tsm,q->txbuf[q->txptr++]); // send next character
+      gpio_put(PIN_DEBUG0,0);
       if(q->txptr==q->txlen) {                     // finished?
         q->txptr=-1;
         *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt now
@@ -388,7 +400,6 @@ static void port_uart_irq(int pn) {
   if(!pio_sm_is_rx_fifo_empty(pio,rsm)) {         // RX not empty?
     b=(int)*((io_rw_8*)&pio->rxf[rsm]+3);           // get byte
     m->check^=b;                                   // accumulate checksum
-//    gpio_put(PIN_DEBUG0,1);
   DEB_SER  o2hex(b);
     switch(q->mstate) {
   case MS_NOSYNC:
@@ -486,5 +497,11 @@ void port_sendmessage(int pn,unsigned char*buf,int l) {
   q->txptr=0;
   q->txlen=l;
   *p->inte=p->intb;  // both interrupts enabled
+  switch(pn) { //!!! this is not very elegant
+case 0:pio0->inte0=0x12; break;
+case 1:pio0->inte1=0x48; break;
+case 2:pio1->inte0=0x12; break;
+case 3:pio1->inte1=0x48; break;
+    }
   }
 

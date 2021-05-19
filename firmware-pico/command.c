@@ -84,7 +84,7 @@ static int cmd_pid()  {
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kd=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].windup=v;
   portinfo[cmdport].pwmmode=1;                     // enable PID controller and trigger messages from device providing process variable
-//!!!  device_sendselect(portinfo[cmdport].pvport,portinfo[cmdport].pvmode);
+  device_sendselect(portinfo[cmdport].pvport,portinfo[cmdport].pvmode);
   return 0;
 err:
   portinfo[cmdport].pwmmode=0;

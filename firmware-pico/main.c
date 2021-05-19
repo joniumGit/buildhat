@@ -65,7 +65,6 @@ void go() {
         }
       if(delay[i]>0) continue;                     // skip processing while we are delaying
       delay[i]=0;
-      if(i!=1) continue; //!!!
       switch(state[i]) {
     case 0:
         d->signature=0;
