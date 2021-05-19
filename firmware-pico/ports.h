@@ -43,6 +43,7 @@ extern struct message {
   UC plen;                                         // payload length (0..128)
   UC payload[128];
   UC check;                                        // checksum (0xff for pass)
+  UC pad[3];
   } messages[NPORTS];
 
 #define MQLEN 4
