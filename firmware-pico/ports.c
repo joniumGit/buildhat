@@ -388,7 +388,7 @@ static void port_uart_irq(int pn) {
   if(!pio_sm_is_rx_fifo_empty(pio,rsm)) {         // RX not empty?
     b=(int)*((io_rw_8*)&pio->rxf[rsm]+3);           // get byte
     m->check^=b;                                   // accumulate checksum
-//    GPIOD->ODR|=8;
+//    gpio_put(PIN_DEBUG0,1);
   DEB_SER  o2hex(b);
     switch(q->mstate) {
   case MS_NOSYNC:
@@ -472,8 +472,8 @@ static void port_uart_irq(int pn) {
       break;
       }
     q->lasttick=gettick();
+//    gpio_put(PIN_DEBUG0,0);
     }
-//  GPIOD->ODR&=~8;
   }
 
 void port_sendmessage(int pn,unsigned char*buf,int l) {

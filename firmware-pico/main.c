@@ -66,7 +66,6 @@ void go() {
       if(delay[i]>0) continue;                     // skip processing while we are delaying
       delay[i]=0;
       if(i!=1) continue; //!!!
-      o1ch('<'); odec(state[i]); o1ch('>');
       switch(state[i]) {
     case 0:
         d->signature=0;
@@ -175,10 +174,14 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
           if(q->framingerrors>0) {
             o1ch('P'); o1hex(i); ostrnl(": framing error: disconnecting");
             q->framingerrors=0;
+            port_uartoff(i);
+            state[i]=0;
             }
           if(q->checksumerrors>0) {
             o1ch('P'); o1hex(i); ostrnl(": checksum error: disconnecting");
             q->checksumerrors=0;
+            port_uartoff(i);
+            state[i]=0;
             }
           if(timers[i][1]>2000) {
             o1ch('P'); o1hex(i); ostrnl(": timeout during setup phase: disconnecting");
