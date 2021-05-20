@@ -25,8 +25,8 @@ static void cmd_help() {
   ostrnl("  pid <pidparams>    : set current port to PID control mode with <pidparams>");
   ostrnl("  set <setpoint>     : configure constant set point for current port");
   ostrnl("  set <waveparams>   : configure varying set point for current port");
+  ostrnl("  plimit <limit>     : set PID output drive limit for all ports (default 0.1)");
   ostrnl("  debug <debugcode>  : enable debugging output");
-  ostrnl("  xyzzy              : remove PID output drive limit");
   ostrnl("");
   ostrnl("Where:");
   ostr  ("  <port>             : 0.."); odec(NPORTS-1); onl();
@@ -46,6 +46,7 @@ static void cmd_help() {
   ostrnl("    <windup>         : PID integral windup limit");
   ostrnl("  <waveparams>       : <shape> <min> <max> <period> <phase>");
   ostrnl("    <shape>          : square | sine | triangle");
+  ostrnl("  <limit>            : 0..1 as fraction of maximum PWM drive");
   ostrnl("  <debugcode>        : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
   ostrnl("                       8=DATA payload; 16=PID controller");
   }
@@ -121,11 +122,11 @@ static int cmd_set()  {
   cmd_set_const(u);
   return 0;
   }
-static int cmd_on()    { cmd_set_const(1.0); return 0; }
-static int cmd_off()   { cmd_set_const(0.0); return 0; }
-static int cmd_vin()   { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
-static int cmd_debug() { return !parseint(&debug); }
-static int cmd_xyzzy() { pid_drive_limit=1.0; return 0; }
+static int cmd_on()     { cmd_set_const(1.0); return 0; }
+static int cmd_off()    { cmd_set_const(0.0); return 0; }
+static int cmd_vin()    { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
+static int cmd_debug()  { return !parseint(&debug); }
+static int cmd_plimit() { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_drive_limit,0,1); return 0; }
 
 void cmd_prompt() { o1ch('P'); odec(cmdport); o1ch('>'); }
 
@@ -145,7 +146,7 @@ void proc_cmd() {
     else if(strmatch("on"     )) { if(cmd_on())      goto err; }
     else if(strmatch("vin"    )) { if(cmd_vin())     goto err; }
     else if(strmatch("debug"  )) { if(cmd_debug())   goto err; }
-    else if(strmatch("xyzzy"  )) { if(cmd_xyzzy())   goto err; }
+    else if(strmatch("plimit" )) { if(cmd_plimit())  goto err; }
     else goto err;
     }
 err:

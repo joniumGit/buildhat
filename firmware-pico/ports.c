@@ -59,10 +59,10 @@ static void port_set_pwm_int(int pn,int pwm) {
     port_set_pwmamount(pn,1); // minimum amount
     return;
     }
-  if(abs(lpwm)>abs(pwm)) port_set_pwmamount(pn,abs(pwm)); // amount reducing in absolute terms? then set it first
+  if(ABS(lpwm)>ABS(pwm)) port_set_pwmamount(pn,ABS(pwm)); // amount reducing in absolute terms? then set it first
   if(pwm< 0&&lpwm>=0) port_set_pwmflags(pn,0x5f); // enable, -ve direction
   if(pwm>=0&&lpwm<=0) port_set_pwmflags(pn,0x7f); // enable, +ve direction
-  if(abs(lpwm)<=abs(pwm)) port_set_pwmamount(pn,abs(pwm)); // amount increasing in absolute terms? then set it last
+  if(ABS(lpwm)<=ABS(pwm)) port_set_pwmamount(pn,ABS(pwm)); // amount increasing in absolute terms? then set it last
   }
 
 // set PWM values according to pwm:
@@ -140,7 +140,7 @@ static int txprogoffset,rxprogoffset;
 void init_ports() {
   int i,j;
   struct porthw*p;
-  ostrnl("Initialising ports");
+//  ostrnl("Initialising ports");
   memset(portinfo,0,sizeof(portinfo));
   gpio_init(PIN_LED0      ); gpio_set_dir(PIN_LED0      ,1);
   gpio_init(PIN_LED1      ); gpio_set_dir(PIN_LED1      ,1);
@@ -189,11 +189,11 @@ void init_ports() {
 //    if(i%8==7) onl();
 //    }
 
-  ostrnl("Resetting drivers");
+//  ostrnl("Resetting drivers");
   for(i=0;i<NPORTS;i++) port_resetdriver(i);
   wait_ticks(100);
 
-  ostrnl("Reading driver dumps");
+//  ostrnl("Reading driver dumps");
   for(i=0;i<NPORTS;i++) {
 //    ostr("Port "); odec(i); onl();
     for(j=0;j<DRIVERBYTES;j++) {
