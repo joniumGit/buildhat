@@ -227,25 +227,12 @@ void init_ports() {
 //    }
 
 
-//  for(;;) {
+//  for(j=0;j<20;j++) {
 //    struct porthw*p=porthw+1;
-//    int s0=0,s1=0,u;
+//    int s=0,u;
+//
 //    for(i=0;i<4;i++) {
 //      gpio_put(PIN_DEBUG0,i==0);
-//      gpio_set_dir(p->pin_rx,0);
-//      gpio_disable_pulls(p->pin_rx);
-//      switch(i) {
-//    case 0: gpio_set_dir(p->pin_tx,1); gpio_put(p->pin_tx,0);     break;
-//    case 1: gpio_set_dir(p->pin_tx,0); gpio_pull_down(p->pin_tx); break;
-//    case 2: gpio_set_dir(p->pin_tx,0); gpio_pull_up(p->pin_tx);   break;
-//    case 3: gpio_set_dir(p->pin_tx,1); gpio_put(p->pin_tx,1);     break;
-//        }
-//      wait_ticks(10);
-//      u=port_state56(1);
-//      if(u&1) s0|=1<<i;
-//      if(u&2) s1|=1<<i;
-//      }
-//    for(i=0;i<4;i++) {
 //      gpio_set_dir(p->pin_tx,0);
 //      gpio_disable_pulls(p->pin_tx);
 //      switch(i) {
@@ -256,11 +243,31 @@ void init_ports() {
 //        }
 //      wait_ticks(10);
 //      u=port_state56(1);
-//      if(u&1) s0|=0x10<<i;
-//      if(u&2) s1|=0x10<<i;
+//      if(u&1) s|=0x0001<<i;
+//      if(u&2) s|=0x0100<<i;
 //      }
 //
-//    o2hex(s0); osp(); o2hex(s1); onl();
+//    for(i=0;i<4;i++) {
+//      gpio_set_dir(p->pin_rx,0);
+//      gpio_disable_pulls(p->pin_rx);
+//      switch(i) {
+//    case 0: gpio_set_dir(p->pin_tx,1); gpio_put(p->pin_tx,0);     break;
+//    case 1: gpio_set_dir(p->pin_tx,0); gpio_pull_down(p->pin_tx); break;
+//    case 2: gpio_set_dir(p->pin_tx,0); gpio_pull_up(p->pin_tx);   break;
+//    case 3: gpio_set_dir(p->pin_tx,1); gpio_put(p->pin_tx,1);     break;
+//        }
+//      wait_ticks(10);
+//      u=port_state56(1);
+//      if(u&1) s|=0x0010<<i;
+//      if(u&2) s|=0x1000<<i;
+//      }
+//
+//    o4hex(s); onl();
+//    if(j==10) {
+//      port_uarton(1);
+//      port_uartoff(1);
+//      onl();
+//      }
 //    }
 
   }

@@ -65,6 +65,7 @@ void go() {
         }
       if(delay[i]>0) continue;                     // skip processing while we are delaying
       delay[i]=0;
+//!!!      if(i!=1) continue;
       switch(state[i]) {
     case 0:
         d->signature=0;
@@ -96,7 +97,8 @@ void go() {
         gpio_set_dir(pin_a,0);
         gpio_set_dir(pin_b,0);
 DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o4hex(d->signature); }
-        if((d->signature&0xff)==0xcf) d->signature=0x00cf;
+        if((d->signature&0x00ff)==0x00cf) d->signature=0x00cf; // ignore random RX data from active ID
+        if((d->signature&0x9999)==0x8888) d->signature=0xcccc; // all possible signatures from button
         switch(d->signature) {
       default:
       case 0x0cc0: id= 0; break;               // nothing connected
@@ -104,8 +106,7 @@ DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o4hex(d->signatu
       case 0x00ff: id= 2; break;               // System train motor
       case 0xff00: id= 3; break;               // System turntable motor
       case 0x0000: id= 4; break;               // general PWM/third party
-      case 0xcccc:                             // button/touch sensor not pressed
-      case 0x8888: id= 5; break;               // button/touch sensor pressed
+      case 0xcccc: id= 5; break;               // button/touch sensor
       case 0xffff: id= 6; break;               // Technic large motor
       case 0xff80: id= 7; break;               // Technic XL motor (note that some have active ID!)
       case 0x0c80: id= 8; break;               // simple lights
@@ -233,10 +234,12 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             o1ch('P'); o1hex(i); ostr(": too many errors (");
             odec(q->framingerrors); o1ch('+');
             odec(q->checksumerrors); ostrnl("): disconnecting");
+            port_uartoff(i);
             state[i]=0;
             }
           if(timers[i][1]>500) {
             o1ch('P'); o1hex(i); ostrnl(": timeout during data phase: disconnecting");
+            port_uartoff(i);
             state[i]=0;
             }
           }
