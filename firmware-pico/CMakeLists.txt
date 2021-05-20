@@ -2,14 +2,13 @@ cmake_minimum_required(VERSION 3.13)
 
 include(pico_sdk_import.cmake)
 
-project(test_project C CXX ASM)
+project(main_project C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
 
-add_executable(test
-#  test.c
+add_executable(main
   main.c
   control.c
   command.c
@@ -23,10 +22,10 @@ add_executable(test
   timer.c
   )
 
-pico_generate_pio_header(test ${CMAKE_CURRENT_LIST_DIR}/uart_tx.pio)
-pico_generate_pio_header(test ${CMAKE_CURRENT_LIST_DIR}/uart_rx.pio)
+pico_generate_pio_header(main ${CMAKE_CURRENT_LIST_DIR}/uart_tx.pio)
+pico_generate_pio_header(main ${CMAKE_CURRENT_LIST_DIR}/uart_rx.pio)
 
-# pico_enable_stdio_usb(test 1)
-pico_enable_stdio_uart(test 1)
-pico_add_extra_outputs(test)
-target_link_libraries(test pico_stdlib hardware_adc hardware_i2c hardware_pio)
+# pico_enable_stdio_usb(main 1)
+pico_enable_stdio_uart(main 1)
+pico_add_extra_outputs(main)
+target_link_libraries(main pico_stdlib hardware_adc hardware_i2c hardware_pio)
