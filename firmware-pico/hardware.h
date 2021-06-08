@@ -30,7 +30,7 @@ extern struct porthw {
 #define UART_C uart0
 #define UART_C_TXPIN 0
 #define UART_C_RXPIN 1
-#define UART_C_BAUD 115200 // 3000000
+#define UART_C_BAUD 3000000
 
 // pins connected to LEDs: LED0 is red, LED1 is green
 #define PIN_LED0       14
