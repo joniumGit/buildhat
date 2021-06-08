@@ -55,5 +55,8 @@ Now (as non-root) can do
 
 /home/mo/tempd/pico/openocd/usr/local/bin/openocd -f /home/mo/tempd/pico/openocd/usr/local/share/openocd/scripts/interface/picoprobe.cfg -f /home/mo/tempd/pico/openocd/usr/local/share/openocd/scripts/target/rp2040.cfg -s tcl
 
+export PICO_SDK_PATH=/home/mo/tempd/pico/pico-sdk/
+
+
 TODO
 Fix GPIO drive strengths

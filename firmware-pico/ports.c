@@ -26,29 +26,39 @@ struct message messages[NPORTS];
 volatile struct message mqueue[NPORTS][MQLEN];
 volatile int mqhead[NPORTS],mqtail[NPORTS];        // if head==tail then the queue is empty
 
+static int port_i2c_write(int p,const uint8_t*src,size_t len,bool nostop) {
+  int u;
+  u=i2c_write_timeout_us(porthw[p].i2c,porthw[p].i2c_add,src,len,nostop,10000); // allow 10ms timeout
+  if(u==PICO_ERROR_GENERIC) { ostr("<P"); odec(p); ostrnl(": generic I²C bus error>"); }
+  if(u==PICO_ERROR_TIMEOUT) { ostr("<P"); odec(p); ostrnl(": I²C bus timeout>"      ); }
+  return u;
+  }
+
+static int port_i2c_read(int p,uint8_t*dst,size_t len,bool nostop) {
+  int u;
+  u=i2c_read_timeout_us (porthw[p].i2c,porthw[p].i2c_add,dst,len,nostop,10000); // allow 10ms timeout
+  }
+
 static int port_readi2cbyte(int p,int b) {
   UC t;
   t=b;
-  if(i2c_write_blocking(porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
-  if(i2c_read_blocking (porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
+  if(port_i2c_write(p,&t,1,0)==-2) return -1;
+  if(port_i2c_read (p,&t,1,0)==-2) return -1;
   return t;
   }
 
-static inline void port_set_pwmflags(int pn,int f) {
+static inline void port_set_pwmflags(int p,int f) {
   UC t[2]={0x4c,f};
-  struct porthw*p=porthw+pn;
-  i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+  port_i2c_write(p,t,2,0);
   }
 
-static inline void port_set_pwmamount(int pn,int a) {
+static inline void port_set_pwmamount(int p,int a) {
   UC t[3]={0x7f,a&0xff,a>>8};
-  struct porthw*p=porthw+pn;
-  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
+  port_i2c_write(p,t,3,0);
   }
 
 // set PWM values as integer
 static void port_set_pwm_int(int pn,int pwm) {
-  struct porthw*p=porthw+pn;
   struct portinfo*q=portinfo+pn;
   UC t[3];
   int lpwm=q->lastpwm;
@@ -68,56 +78,50 @@ static void port_set_pwm_int(int pn,int pwm) {
 // set PWM values according to pwm:
 // -1 full power reverse
 // +1 full power forwards
-void port_set_pwm(int pn,float pwm) {
-  struct porthw*p=porthw+pn;
+void port_set_pwm(int p,float pwm) {
   int u;
   UC t[3];
   CLAMP(pwm,-1,1);
   u=(int)(pwm*pwm_period+0.5);
-  port_set_pwm_int(pn,u);
+  port_set_pwm_int(p,u);
   }
 
 void port_motor_brake(int pn) {
-//!!!  struct porthw*p=porthw+pn;
+//!!!
   }
 
 void port_initpwm(unsigned int period) {
-  struct porthw*p;
   int i,j;
   UC t[2];
   pwm_period=period;
   for(i=0;i<NPORTS;i++) {
-    p=porthw+i;
     portinfo[i].lastpwm=0x7fffffff; // dummy value
     port_set_pwm_int(i,0);
     t[0]=0x86; // period ~ 256 clocks
     t[1]=0x3f;
-    i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+    port_i2c_write(i,t,2,0);
     }
   }
 
 // GPIO5 -> b0, GPIO6 -> b1
-unsigned int port_state56(int pn) {
+unsigned int port_state56(int p) {
   unsigned int u;
-  u=port_readi2cbyte(pn,0x4b);
+  u=port_readi2cbyte(p,0x4b);
   u=(u>>6)&3;
   return u;
   }
 
-void port_resetdriver(int pn) {
-  struct porthw*p=porthw+pn;
+void port_resetdriver(int p) {
   UC t[2]={0xf5,0x01};
-  i2c_write_blocking(p->i2c,p->i2c_add,t,2,0);
+  port_i2c_write(p,t,2,0);
   }
 
-void port_initdriver(int pn) {
-  struct porthw*p=porthw+pn;
+void port_initdriver(int p) {
   UC t[3]={0x6a,0x00,0x00}; // disable pull-ups/downs
-  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
+  port_i2c_write(p,t,3,0);
   }
 
-//void port_setpin6(int pn,int s) {
-//  struct porthw*p=porthw+pn;
+//void port_setpin6(int p,int s) {
 //  UC t[3]={0x07,driverdata[pn][0x07],driverdata[pn][0x08]};
 //  t[2]=0; t[1]&=0x0f;
 //  switch(s) {
@@ -125,7 +129,7 @@ void port_initdriver(int pn) {
 //case 1: t[2]|=0x00; t[1]|=0x00; break;
 //case 2: t[2]|=0xff; t[1]|=0xf0; break;
 //    }
-//  i2c_write_blocking(p->i2c,p->i2c_add,t,3,0);
+//  port_i2c_write(p,t,3,0);
 //  }
 
 static void port_uart_irq(int pn);
@@ -140,7 +144,7 @@ static int txprogoffset,rxprogoffset;
 void init_ports() {
   int i,j;
   struct porthw*p;
-//  ostrnl("Initialising ports");
+  ostrnl("Initialising ports");
   memset(portinfo,0,sizeof(portinfo));
   gpio_init(PIN_LED0      ); gpio_set_dir(PIN_LED0      ,1);
   gpio_init(PIN_LED1      ); gpio_set_dir(PIN_LED1      ,1);
@@ -189,13 +193,17 @@ void init_ports() {
 //    if(i%8==7) onl();
 //    }
 
-//  ostrnl("Resetting drivers");
-  for(i=0;i<NPORTS;i++) port_resetdriver(i);
+  ostr("Resetting drivers: ");
+  for(i=0;i<NPORTS;i++) {
+    odec(i);
+    port_resetdriver(i);
+    }
+  onl();
   wait_ticks(100);
 
-//  ostrnl("Reading driver dumps");
+  ostr("Reading driver dumps: ");
   for(i=0;i<NPORTS;i++) {
-//    ostr("Port "); odec(i); onl();
+    odec(i);
     for(j=0;j<DRIVERBYTES;j++) {
       driverdata[i][j]=port_readi2cbyte(i,j);
 //      o2hex(driverdata[i][j]);
@@ -203,6 +211,7 @@ void init_ports() {
 //      else         osp();
       }
     }
+  onl();
 
   for(i=0;i<NPORTS;i++) port_initdriver(i);
 
@@ -270,6 +279,7 @@ void init_ports() {
 //      }
 //    }
 
+  ostrnl("Done initialising ports");
   }
 
 // ========================== LPF2 port UARTs and ISRs =========================
