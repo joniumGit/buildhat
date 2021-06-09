@@ -117,8 +117,10 @@ void port_resetdriver(int p) {
   }
 
 void port_initdriver(int p) {
-  UC t[3]={0x6a,0x00,0x00}; // disable pull-ups/downs
+  UC t[3]={0x6a,0x00,0x00}; // disable pull-ups/downs on GPIO5/6
   port_i2c_write(p,t,3,0);
+  t[0]=0x67; t[1]=0x6a; t[2]=0x15;
+  port_i2c_write(p,t,3,0); // enable 10kΩ pull-ups and Schmitt triggers on SCL, SDA
   }
 
 //void port_setpin6(int p,int s) {
