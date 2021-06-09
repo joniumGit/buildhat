@@ -167,7 +167,7 @@ DEB_DPY {
       ostr(" payload="); o2hexdump(m->payload,m->plen); onl();
       }
     memcpy(d->modedata[m->mode],m->payload,m->plen);
-    d->modedatavalid[m->mode]=1;
+    d->modedatalen[m->mode]=m->plen;
     break;
 default:
     o1ch('P'); o1hex(pn);

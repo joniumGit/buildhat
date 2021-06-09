@@ -28,8 +28,9 @@ extern struct devinfo {
   int pospid[4];                                   // position PID constants reported by device
   int speedpid[4];                                 // speed PID constants reported by device
   unsigned char modedata[MAXNMODES][128];
-  int modedatavalid[MAXNMODES];                    // has modedata[i] ever been written to?
+  int modedatalen[MAXNMODES];                      // number of bytes received; 0 if modedata[i] has never been written to
   } devinfo[NPORTS];
 
 extern void device_init(int dn);
 extern void device_dump(int dn);
+extern int device_varfrommode(int port,int mode,int offset,int format,float*var);

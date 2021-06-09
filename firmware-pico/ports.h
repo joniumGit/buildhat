@@ -12,8 +12,13 @@ extern struct portinfo {
   volatile int framingerrors;                      // error counters
   volatile int checksumerrors;
   volatile unsigned char txbuf[TXBLEN];            // buffer to send
-  volatile int txptr;                              // current index into buffer; -1 for idle
+  volatile int txptr;                              // current index into buffer; -1 for idle; -2 for UART off
   volatile int txlen;                              // buffer length
+
+  int selmode;                                     // mode selected by "select" command or -1 for none
+  int seloffset;
+  int selformat;
+
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled
   int lastpwm;                                     // integer value to which PWM was last set
   float setpoint;                                  // PID/direct PWM setpoint

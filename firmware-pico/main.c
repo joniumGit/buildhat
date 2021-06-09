@@ -25,7 +25,8 @@
 // timer 0: NACK timing during data phase
 // timer 1: watchdog during setup and data phases
 // timer 2: PID update
-#define NTIMERS 3
+// timer 3: MODE data output
+#define NTIMERS 4
 
 // counter 0: signature bit generation
 // counter 1: how many times we have seen this passive ID consecutively (up to 5)
@@ -97,7 +98,7 @@ void go() {
         gpio_set_dir(pin_a,0);
         gpio_set_dir(pin_b,0);
 DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o4hex(d->signature); }
-        if((d->signature&0x00ff)==0x00cf) d->signature=0x00cf; // ignore random RX data from active ID
+        if((d->signature&0x00ef)==0x00cf) d->signature=0x00cf; // ignore random RX data from active ID
         if((d->signature&0x9999)==0x8888) d->signature=0xcccc; // all possible signatures from button
         switch(d->signature) {
       default:
@@ -220,6 +221,8 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         break;
     case 105:
         timers[i][0]=0;
+        timers[i][3]=0;
+        portinfo[i].selmode=-1;
         o1ch('P'); o1hex(i); ostr(": connected to active ID "); o2hex(d->type); onl();
         d->connected=1;
         state[i]=200;
@@ -235,11 +238,13 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             odec(q->framingerrors); o1ch('+');
             odec(q->checksumerrors); ostrnl("): disconnecting");
             port_uartoff(i);
+            portinfo[i].selmode=-1;
             state[i]=0;
             }
           if(timers[i][1]>500) {
             o1ch('P'); o1hex(i); ostrnl(": timeout during data phase: disconnecting");
             port_uartoff(i);
+            portinfo[i].selmode=-1;
             state[i]=0;
             }
           }
@@ -247,6 +252,15 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         if(timers[i][0]>=100) {                    // send a NACK every 100ms
           timers[i][0]-=100;
           state[i]++;
+          }
+        if(timers[i][3]>=100) {
+          timers[i][3]-=100;
+          if(portinfo[i].selmode>=0) {
+            float v;
+            if(device_varfrommode(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat,&v)) {
+              o1ch('P'); o1hex(i); ostr("V: "); ostrnl(sfloat(v));
+              }
+            }
           }
         break;
     case 201:

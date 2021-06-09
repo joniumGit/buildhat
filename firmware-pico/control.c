@@ -199,7 +199,7 @@ int parsefloat(float*p) {
   return 1;
   }
 
-int parsepvfmt(unsigned int*p) {
+int parsefmt(unsigned int*p) {
   if     (cmdbuf[cbrptr]=='u'&&cmdbuf[cbrptr+1]=='1') *p=0x001;
   else if(cmdbuf[cbrptr]=='s'&&cmdbuf[cbrptr+1]=='1') *p=0x101;
   else if(cmdbuf[cbrptr]=='u'&&cmdbuf[cbrptr+1]=='2') *p=0x002;

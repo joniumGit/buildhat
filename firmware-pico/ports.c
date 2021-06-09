@@ -170,6 +170,7 @@ void init_ports() {
     gpio_init(p->pin_tx ); gpio_set_dir(p->pin_tx ,0);
 //    padsbank0_hw->io[p->pin_rx]&=~0x30; // drive strength 2mA
 //    padsbank0_hw->io[p->pin_tx]&=~0x30;
+    portinfo[i].selmode=-1;
     }
   gpio_put(PIN_PORTON,1);                          // enable port power
 #ifdef DEBUG_PINS
@@ -374,7 +375,7 @@ case 2:pio1->inte0=0; break;
 case 3:pio1->inte1=0; break;
     }
   q->mstate=MS_NOSYNC;
-  q->txptr=-1;
+  q->txptr=-2;
   }
 
 int port_waitch(int pn) {
@@ -509,6 +510,7 @@ void port_sendmessage(int pn,unsigned char*buf,int l) {
   struct portinfo*q=portinfo+pn;
   if(l<1) return;
   if(l>TXBLEN) l=TXBLEN;
+  if(q->txptr==-2) return;                         // UART off? ignore
   while(q->txptr>=0) ;                             // wait for TX idle
   memcpy((void*)q->txbuf,buf,l);
   q->txptr=0;

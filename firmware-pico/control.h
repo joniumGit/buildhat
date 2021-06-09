@@ -17,6 +17,6 @@ extern int parseuint(unsigned int*p);
 extern int parseint(int*p);
 extern int parseq16(int*p);
 extern int parsefloat(float*p);
-extern int parsepvfmt(unsigned int*p);
+extern int parsefmt(unsigned int*p);
 extern int strmatch(char*s);
 extern void proc_ctrl();
