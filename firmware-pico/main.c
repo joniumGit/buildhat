@@ -211,16 +211,18 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         break;
     case 103:
         device_sendsys(i,4);                       // send ACK; pause
-        delay[i]=30;
+        delay[i]=10;
         state[i]++;
         break;
     case 104:
         port_setbaud(i,d->baud);                   // switch baud rate
-        delay[i]=100;
+        ostr("set baud rate to "); odec(d->baud); onl();
+        delay[i]=1;
         state[i]++;
         break;
     case 105:
-        timers[i][0]=0;
+        timers[i][0]=0;                            // reset communications timeouts
+        timers[i][1]=0;
         timers[i][3]=0;
         portinfo[i].selmode=-1;
         o1ch('P'); o1hex(i); ostr(": connected to active ID "); o2hex(d->type); onl();
