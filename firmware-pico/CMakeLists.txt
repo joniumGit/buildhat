@@ -25,7 +25,9 @@ add_executable(main
 pico_generate_pio_header(main ${CMAKE_CURRENT_LIST_DIR}/uart_tx.pio)
 pico_generate_pio_header(main ${CMAKE_CURRENT_LIST_DIR}/uart_rx.pio)
 
+pico_set_binary_type(main no_flash)
 # pico_enable_stdio_usb(main 1)
 pico_enable_stdio_uart(main 1)
 pico_add_extra_outputs(main)
 target_link_libraries(main pico_stdlib hardware_adc hardware_i2c hardware_pio)
+set_target_properties(main PROPERTIES PICO_TARGET_LINKER_SCRIPT ../main.ld)
