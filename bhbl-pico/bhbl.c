@@ -113,6 +113,7 @@ static int cmd_reboot() {
   if(cmd_verify()) return 1;
   ostrnl("Rebooting...");
   wait_ticks(100);
+  deinit_control();
   reboot();
   return 0;
   }

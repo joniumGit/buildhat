@@ -8,6 +8,7 @@
 extern int i1ch();
 extern void o1ch(int c);
 extern void init_control();
+extern void deinit_control();
 extern int w1ch();
 extern void parse_reset();
 extern int parse_eol();

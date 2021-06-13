@@ -78,6 +78,10 @@ void init_control() {
   do wait_ticks(10); while(i1ch()!=-1); // !!!we seem to get a spurious character in the RX buffer at the start
   }
 
+void deinit_control() {
+  irq_set_enabled(UART0_IRQ,0);
+  }
+
 // wait for a character
 int w1ch() {
   int u;
