@@ -37,3 +37,27 @@ void device_dump(int dn) {
   ostr("     speed PID:"); for(i=0;i<4;i++) { osp(); o8hex(d->speedpid[i]); } onl();
   ostr("  position PID:"); for(i=0;i<4;i++) { osp(); o8hex(d->  pospid[i]); } onl();
   }
+
+int device_varfrommode(int port,int mode,int offset,int format,float*var) {
+  char buf[4];
+  int i;
+  float v;
+  struct devinfo*dvp;
+
+  if(port<0||port>=NPORTS) return 0;
+  dvp=devinfo+port;
+  if(dvp->modedatalen[mode]==0) return 0;
+  for(i=0;i<(format&0x0f);i++) buf[i]=dvp->modedata[mode][offset+i];
+  switch(format) {
+case 0x001: v=(float)*(unsigned char* )buf; break;
+case 0x101: v=(float)*(  signed char* )buf; break;
+case 0x002: v=(float)*(unsigned short*)buf; break;
+case 0x102: v=(float)*(  signed short*)buf; break;
+case 0x004: v=(float)*(unsigned int*  )buf; break;
+case 0x104: v=(float)*(  signed int*  )buf; break;
+case 0x204: v=       *(         float*)buf; break;
+default:    v=0;
+    }
+  *var=v;
+  return 1;
+  }

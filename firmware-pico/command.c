@@ -26,6 +26,8 @@ static void cmd_help() {
   ostrnl("  set <setpoint>     : configure constant set point for current port");
   ostrnl("  set <waveparams>   : configure varying set point for current port");
   ostrnl("  plimit <limit>     : set PID output drive limit for all ports (default 0.1)");
+  ostrnl("  select <selvar>    : send a SELECT message to select given variable and output it");
+  ostrnl("  select             : stop outputting variable");
   ostrnl("  debug <debugcode>  : enable debugging output");
   ostrnl("");
   ostrnl("Where:");
@@ -47,6 +49,13 @@ static void cmd_help() {
   ostrnl("  <waveparams>       : <shape> <min> <max> <period> <phase>");
   ostrnl("    <shape>          : square | sine | triangle");
   ostrnl("  <limit>            : 0..1 as fraction of maximum PWM drive");
+  ostrnl("  <selvar>           : <selmode> <seloffset> <selformat>");
+  ostrnl("    <selmode>        : mode to fetch variable from");
+  ostrnl("    <seloffset>      : variable byte offset into mode");
+  ostrnl("    <selformat>      : u1=unsigned byte;  s1=signed byte;");
+  ostrnl("                       u2=unsigned short; s2=signed short;");
+  ostrnl("                       u4=unsigned int;   s4=signed int;");
+  ostrnl("                       f4=float");
   ostrnl("  <debugcode>        : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
   ostrnl("                       8=DATA payload; 16=PID controller");
   }
@@ -77,7 +86,7 @@ static int cmd_pid()  {
   if(!parseuint(&u))  goto err; CLAMP(u,0,NPORTS-1);                       portinfo[cmdport].pvport=u;
   if(!parseuint(&u))  goto err; CLAMP(u,0,MAXNMODES-1);                    portinfo[cmdport].pvmode=u;
   if(!parseuint(&u))  goto err; CLAMP(u,0,127);                            portinfo[cmdport].pvoffset=u;
-  if(!parsepvfmt(&u)) goto err;                                            portinfo[cmdport].pvformat=u;
+  if(!parsefmt(&u))   goto err;                                            portinfo[cmdport].pvformat=u;
   if(!parsefloat(&v)) goto err; CLAMP(u,-32,32);                           portinfo[cmdport].pvscale=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].pvunwrap=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kp=v;
@@ -127,6 +136,20 @@ static int cmd_off()    { cmd_set_const(0.0); return 0; }
 static int cmd_vin()    { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
 static int cmd_debug()  { return !parseint(&debug); }
 static int cmd_plimit() { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_drive_limit,0,1); return 0; }
+static int cmd_select() {
+  int u;
+  if(!parseint(&u))  goto off; CLAMP(u,0,MAXNMODES-1); portinfo[cmdport].selmode=u;
+  if(!parseint(&u))  goto err; CLAMP(u,0,127);         portinfo[cmdport].seloffset=u;
+  if(!parsefmt(&u))  goto err;                         portinfo[cmdport].selformat=u;
+  device_sendselect(cmdport,portinfo[cmdport].selmode);
+  return 0;
+off:
+  portinfo[cmdport].selmode=-1;
+  return 0;
+err:
+  portinfo[cmdport].selmode=-1;
+  return 1;
+  }
 
 void cmd_prompt() { o1ch('P'); odec(cmdport); o1ch('>'); }
 
@@ -147,6 +170,7 @@ void proc_cmd() {
     else if(strmatch("vin"    )) { if(cmd_vin())     goto err; }
     else if(strmatch("debug"  )) { if(cmd_debug())   goto err; }
     else if(strmatch("plimit" )) { if(cmd_plimit())  goto err; }
+    else if(strmatch("select" )) { if(cmd_select())  goto err; }
     else goto err;
     }
 err:

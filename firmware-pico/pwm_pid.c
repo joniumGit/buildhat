@@ -46,10 +46,9 @@ static const float sintab[256]={
 
 void proc_pwm(int pn) {
   struct portinfo*p=portinfo+pn;
-  struct devinfo*d=devinfo+pn,*dvp;
+  struct devinfo*d=devinfo+pn;
   int i;
   float u;
-  char pvbuf[4];
   float pv;
   float err,derr;
 
@@ -82,22 +81,8 @@ case WAVE_TRI:
     port_set_pwm(pn,p->setpoint);
     return;
     }
-// here we are in PID controller mode: first extract the process variable
-  if(p->pvport<0||p->pvport>=NPORTS) return;
-  dvp=devinfo +p->pvport;
-  if(!dvp->modedatavalid[p->pvmode]) return;       // no valid process variable? do nothing
-  u=0;
-  for(i=0;i<(p->pvformat&0x0f);i++) pvbuf[i]=dvp->modedata[p->pvmode][p->pvoffset+i];
-  switch(p->pvformat) {
-case 0x001: pv=(float)*(unsigned char* )pvbuf; break;
-case 0x101: pv=(float)*(  signed char* )pvbuf; break;
-case 0x002: pv=(float)*(unsigned short*)pvbuf; break;
-case 0x102: pv=(float)*(  signed short*)pvbuf; break;
-case 0x004: pv=(float)*(unsigned int*  )pvbuf; break;
-case 0x104: pv=(float)*(  signed int*  )pvbuf; break;
-case 0x204: pv=       *(         float*)pvbuf; break;
-default:    pv=0;
-    }
+// here we are in PID controller mode: first try to extract the process variable
+  if(device_varfrommode(p->pvport,p->pvmode,p->pvoffset,p->pvformat,&pv)==0) return;
   pv*=p->pvscale;
   if(p->pvunwrap!=0) {
     float dpv=pv-p->pid_pv_last;                   // subtract consecutive sensor readings
