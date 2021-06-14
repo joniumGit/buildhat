@@ -1,0 +1,50 @@
+Bootloader introduction
+-----------------------
+
+The bootloader is intended to be programmed into the RP2040 when
+the board is manufactured. The bootloader can download a binary image
+over the RP2040's default serial port pins using a simple set of commands.
+
+Building the bootloader
+-----------------------
+
+In the bhbl-pico directory run
+
+  rm -r build
+  mkdir -p build
+  cmake ..
+  make
+
+This will create files build/main.* (for example build/main.elf)
+that can be programmed into the RP2040 using openocd or similar
+tool or, in principle, over USB.
+
+Creating an image the bootloader can use
+----------------------------------------
+
+In the firmware-pico directory execute the same sequence as above
+
+  rm -r build
+  mkdir -p build
+  cmake ..
+  make
+
+This will again create files build/main.* (for example build/main.bin)
+that are suitable for uploading to the board using the bootloader.
+Note that this binary is intended to run from the RP2040's RAM, and
+so is not suitable for programming into its flash.
+
+Uploading the image
+-------------------
+
+In the bhbl-pico directory run
+
+  make
+  ./upload /dev/ttyUSB0 ../firmware-pico/build/main.bin
+
+with the last line suitably modified to reflect the serial device in
+use on the host. The above has been tested on an ordinary Linux PC with
+a USB serial adapter.
+
+A simple checksum is used to verify the integrity of the uploaded
+image, but there are no security features.
