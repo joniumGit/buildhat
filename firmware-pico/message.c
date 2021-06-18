@@ -49,6 +49,7 @@ int proc_setupmessages(int pn) {
   struct message*m;
   struct devinfo*d=devinfo+pn;
   struct modeinfo*md;
+  int i;
   if(mqhead[pn]==mqtail[pn]) return -1;            // nothing to do?
   m=(struct message*)mqueue[pn]+mqtail[pn];                         // get message
   switch(m->type) {
@@ -100,8 +101,14 @@ case 0x80:
   case 0x05:
       if(m->plen>=2) md->prefmap[0]=m->payload[0],md->prefmap[1]=m->payload[1];
       break;
-  case 0x06:
-      // !!! COMBI
+  case 0x06:                                       // allowable COMBI modes
+      d->ncombis=0;
+      ostr(" >> "); o4hex(m->plen); onl();
+      for(i=0;i<m->plen;i+=2) {
+        unsigned short u=*(unsigned short*)(&m->payload[i]);
+        if(u==0) break;
+        d->combis[d->ncombis++]=u;
+        }
       break;
   case 0x09:                                       // SPID  (device speed pid constants)
       if(m->plen!=16) goto unhandled;

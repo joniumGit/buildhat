@@ -3,6 +3,7 @@
 #include "hardware.h"
 
 #define MAXNMODES 16
+#define MAXNCOMBIS 16                            // because the COMBI message fits in 32 bytes, one short for each combi
 
 struct modeinfo {
   char name[129];
@@ -25,6 +26,8 @@ extern struct devinfo {
   int baud;                                        // fast baud rate
   unsigned int hwver,swver;                        // hardware and software versions
   struct modeinfo modes[MAXNMODES];
+  int ncombis;
+  unsigned short combis[MAXNCOMBIS];
   int pospid[4];                                   // position PID constants reported by device
   int speedpid[4];                                 // speed PID constants reported by device
   unsigned char modedata[MAXNMODES][128];

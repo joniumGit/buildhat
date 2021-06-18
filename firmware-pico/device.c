@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "device.h"
 #include "ports.h"
+#include "control.h"
 #include "ioconv.h"
 
 struct devinfo devinfo[NPORTS];
@@ -14,7 +15,7 @@ void device_init(int dn) {
 
 void device_dump(int dn) {
   struct devinfo*d=devinfo+dn;
-  int i;
+  int i,j;
   ostr("P"); o1hex(dn); ostr(": ");
   if(d->type==-1) {
     ostrnl("no device detected");
@@ -32,6 +33,19 @@ void device_dump(int dn) {
     ostr("    RAW: "); o8hex(d->modes[i].rawl); osp(); o8hex(d->modes[i].rawh);
     ostr("    PCT: "); o8hex(d->modes[i].pctl); osp(); o8hex(d->modes[i].pcth);
     ostr("    SI: " ); o8hex(d->modes[i].sil ); osp(); o8hex(d->modes[i].sih );
+    onl();
+    }
+  for(i=0;i<d->ncombis;i++) {
+    unsigned short u=d->combis[i];
+    ostr("  C"); odec(i); ostr(": ");
+    for(j=0;j<16;j++) {
+      if(u&1) {
+        o1ch('M');
+        odec(j);
+        if(u!=1) o1ch('+');
+        }
+      u>>=1;
+      }
     onl();
     }
   ostr("     speed PID:"); for(i=0;i<4;i++) { osp(); o8hex(d->speedpid[i]); } onl();
