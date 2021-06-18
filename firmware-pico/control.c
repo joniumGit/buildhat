@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "common.h"
 // #include "system.h"
 #include "debug.h"
@@ -103,7 +104,24 @@ void skspsc() {                                    // skip spaces and semi-colon
   while(cmdbuf[cbrptr]==' '||cmdbuf[cbrptr]==';') cbrptr++;
   }
 
-static int isdigit(int c) { return c>='0'&&c<='9'; }
+// attempt to parse a hexadecimal integer
+// return 1 for success, writing result to *p, and advance cbrptr
+int parsehex(unsigned int*p) {
+  int i=cbrptr,t;
+  unsigned int v=0;
+  if(!isxdigit(cmdbuf[i])) return 0;
+  while(isxdigit(cmdbuf[i])) {
+    t=cmdbuf[i++];
+    if(islower(t)) t-='a'-'A';
+    if(isalpha(t)) t-='A'-10;
+    else           t-='0';
+    v=v*16+t;
+    }
+  cbrptr=i;
+  sksp();
+  *p=v;
+  return 1;
+  }
 
 // attempt to parse an unsigned integer
 // return 1 for success, writing result to *p, and advance cbrptr

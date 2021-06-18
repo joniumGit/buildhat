@@ -75,3 +75,23 @@ default:    v=0;
   *var=v;
   return 1;
   }
+
+void device_dumpmodevar(int port,int mode,int offset,int format) {
+  float v;
+  if(device_varfrommode(port,mode,offset,format,&v)==0) return;
+  o1ch('P'); o1hex(port); ostr("V: "); ostrnl(sfloat(v));
+  }
+
+void device_dumpmoderaw(int port,int mode) {
+  struct devinfo*dvp;
+  int i;
+
+  if(port<0||port>=NPORTS) return;
+  dvp=devinfo+port;
+  if(dvp->modedatalen[mode]==0) return;
+  o1ch('P'); o1hex(i); ostr("R:");
+  for(i=0;i<dvp->modedatalen[mode];i++) {
+    osp(); o2hex(dvp->modedata[mode][i]);
+    }
+  onl();
+  }

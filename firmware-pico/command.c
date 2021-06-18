@@ -26,8 +26,11 @@ static void cmd_help() {
   ostrnl("  set <setpoint>     : configure constant set point for current port");
   ostrnl("  set <waveparams>   : configure varying set point for current port");
   ostrnl("  plimit <limit>     : set PID output drive limit for all ports (default 0.1)");
-  ostrnl("  select <selvar>    : send a SELECT message to select given variable and output it");
-  ostrnl("  select             : stop outputting variable");
+  ostrnl("  select <selvar>    : send a SELECT message to select a variable and output it");
+  ostrnl("  select <selmode>   : send a SELECT message to select a mode and output all its data in raw hex");
+  ostrnl("  select             : stop outputting data");
+  ostrnl("  write1 <hexbyte>*  : send message with 1-byte header; pads if necessary, sets payload length and checksum");
+  ostrnl("  write2 <hexbyte>*  : send message with 2-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  debug <debugcode>  : enable debugging output");
   ostrnl("");
   ostrnl("Where:");
@@ -56,6 +59,7 @@ static void cmd_help() {
   ostrnl("                       u2=unsigned short; s2=signed short;");
   ostrnl("                       u4=unsigned int;   s4=signed int;");
   ostrnl("                       f4=float");
+  ostrnl("  <hexbyte>          : 1- or 2-digit hex value");
   ostrnl("  <debugcode>        : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
   ostrnl("                       8=DATA payload; 16=PID controller");
   }
@@ -139,17 +143,43 @@ static int cmd_plimit() { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_
 static int cmd_select() {
   int u;
   if(!parseint(&u))  goto off; CLAMP(u,0,MAXNMODES-1); portinfo[cmdport].selmode=u;
-  if(!parseint(&u))  goto err; CLAMP(u,0,127);         portinfo[cmdport].seloffset=u;
+  if(!parseint(&u))  goto raw; CLAMP(u,0,127);         portinfo[cmdport].seloffset=u;
   if(!parsefmt(&u))  goto err;                         portinfo[cmdport].selformat=u;
   device_sendselect(cmdport,portinfo[cmdport].selmode);
   return 0;
 off:
   portinfo[cmdport].selmode=-1;
   return 0;
+raw:
+  portinfo[cmdport].seloffset=-1;
+  device_sendselect(cmdport,portinfo[cmdport].selmode);
+  return 0;
 err:
   portinfo[cmdport].selmode=-1;
   return 1;
   }
+static int cmd_write(int nh) {   // nh=number of header bytes, 1 or 2
+  int i,u,b0,b1;
+  unsigned char t[128];
+  if(!parsehex(&b0)) goto err;
+  if(nh==2) {
+    if(!parsehex(&b1)) goto err;
+  } else b1=-1;
+  for(i=0;i<128;i++) {
+    if(!parsehex(&u)) break;
+    t[i]=u;
+    }
+  o2hex(i); osp();
+  if(i==0) t[i++]=0;
+  while(((i-1)&i)) t[i++]=0;     // pad payload to a power of 2 length
+  u=0;
+  while(i>1) u++,i>>=1;          // calculate log₂ of payload length
+  device_sendmessage(cmdport,b0,b1,u,t);
+  return 0;
+err:
+  return 1;
+  }
+
 
 void cmd_prompt() { o1ch('P'); odec(cmdport); o1ch('>'); }
 
@@ -171,6 +201,8 @@ void proc_cmd() {
     else if(strmatch("debug"  )) { if(cmd_debug())   goto err; }
     else if(strmatch("plimit" )) { if(cmd_plimit())  goto err; }
     else if(strmatch("select" )) { if(cmd_select())  goto err; }
+    else if(strmatch("write1" )) { if(cmd_write(1))  goto err; }
+    else if(strmatch("write2" )) { if(cmd_write(2))  goto err; }
     else goto err;
     }
 err:

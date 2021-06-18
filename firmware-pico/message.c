@@ -23,10 +23,11 @@ void device_sendmessage(int dn,int b0,int b1,int logplen,unsigned char*payload) 
   int i,j,c;
   CLAMP(logplen,0,7);
   j=0;
-  c=buf[j++]=b0+(logplen<<3);
+  c=buf[j++]=(b0&0xc7)|(logplen<<3);
   if(b1>=0) c^=buf[j++]=b1;
   for(i=0;i<1<<logplen;i++) c^=buf[j++]=payload[i];
   buf[j++]=c^0xff;                                 // insert checksum
+  for(i=0;i<j;i++) { osp(); o2hex(buf[i]); } onl();
   port_sendmessage(dn,buf,j);
   }
 
@@ -103,7 +104,6 @@ case 0x80:
       break;
   case 0x06:                                       // allowable COMBI modes
       d->ncombis=0;
-      ostr(" >> "); o4hex(m->plen); onl();
       for(i=0;i<m->plen;i+=2) {
         unsigned short u=*(unsigned short*)(&m->payload[i]);
         if(u==0) break;

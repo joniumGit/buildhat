@@ -13,6 +13,7 @@ extern void parse_reset();
 extern int parse_eol();
 extern void sksp();
 extern void skspsc();
+extern int parsehex(unsigned int*p);
 extern int parseuint(unsigned int*p);
 extern int parseint(int*p);
 extern int parseq16(int*p);
