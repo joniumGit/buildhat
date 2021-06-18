@@ -66,6 +66,18 @@ void go() {
         }
       if(delay[i]>0) continue;                     // skip processing while we are delaying
       delay[i]=0;
+      if(deltat) {
+//        o1hex(gpio_get(10));
+//        o1hex(gpio_get(24));
+//        o2hex(pio0->sm[0].addr); osp();
+//        o2hex(pio0->sm[1].addr); osp(); // osp();
+//        o2hex(pio0->sm[2].addr); osp();
+//        o2hex(pio0->sm[3].addr); osp(); // osp();
+//        o2hex(pio1->sm[0].addr); osp();
+//        o2hex(pio1->sm[1].addr); onl(); // osp();
+//        o2hex(pio1->sm[2].addr); osp();
+//        o2hex(pio1->sm[3].addr); onl();
+        }
 //!!!      if(i!=1) continue;
       switch(state[i]) {
     case 0:

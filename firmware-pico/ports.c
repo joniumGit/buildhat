@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include "common.h"
 #include "debug.h"
@@ -9,6 +10,7 @@
 
 #include "hardware/adc.h"
 #include "hardware/clocks.h"
+#include "hardware/resets.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 #include "hardware/irq.h"
@@ -141,11 +143,17 @@ static void port1_uart_irq() { port_uart_irq(1); }
 static void port2_uart_irq() { port_uart_irq(2); }
 static void port3_uart_irq() { port_uart_irq(3); }
 
-static int txprogoffset,rxprogoffset;
+static int txprogoffset0,rxprogoffset0;
+static int txprogoffset1,rxprogoffset1;
 
 void init_ports() {
   int i,j;
   struct porthw*p;
+  reset_block(RESETS_RESET_PIO0_BITS);
+  reset_block(RESETS_RESET_PIO1_BITS);
+  unreset_block_wait(RESETS_RESET_PIO0_BITS);
+  unreset_block_wait(RESETS_RESET_PIO1_BITS);
+
   ostrnl("Initialising ports");
   memset(portinfo,0,sizeof(portinfo));
   gpio_init(PIN_LED0      ); gpio_set_dir(PIN_LED0      ,1);
@@ -218,10 +226,20 @@ void init_ports() {
 
   for(i=0;i<NPORTS;i++) port_initdriver(i);
 
-  txprogoffset=pio_add_program(pio0,&uart_tx_program);
-  rxprogoffset=pio_add_program(pio0,&uart_rx_program);
-  assert(      pio_add_program(pio1,&uart_tx_program)==txprogoffset);
-  assert(      pio_add_program(pio1,&uart_rx_program)==rxprogoffset);
+  pio_clear_instruction_memory(pio0);
+  pio_clear_instruction_memory(pio1);
+
+  txprogoffset0=pio_add_program(pio0,&uart_tx_program);
+  rxprogoffset0=pio_add_program(pio0,&uart_rx_program);
+  txprogoffset1=pio_add_program(pio1,&uart_tx_program);
+  rxprogoffset1=pio_add_program(pio1,&uart_rx_program);
+  if(txprogoffset0!=txprogoffset1 ||
+     rxprogoffset0!=rxprogoffset1) {
+     ostrnl("Assertion failed");
+     exit(16);
+     }
+//  o2hex(txprogoffset0); osp(); o2hex(rxprogoffset0); onl();
+//  o2hex(txprogoffset1); osp(); o2hex(rxprogoffset1); onl();
 
   irq_set_exclusive_handler(PIO0_IRQ_0,port0_uart_irq);
   irq_set_exclusive_handler(PIO0_IRQ_1,port1_uart_irq);
@@ -317,14 +335,14 @@ void port_uarton(int pn) {
   pio_sm_set_pins_with_mask(pio,tsm,1<<txp,1<<txp);    // tell PIO to initially drive output-high on the selected pin, then map PIO
   pio_sm_set_pindirs_with_mask(pio,tsm,1<<txp,1<<txp); // onto that pin with the IO muxes
   pio_gpio_init(pio,txp);
-  c=uart_tx_program_get_default_config(txprogoffset);
+  c=uart_tx_program_get_default_config(txprogoffset0);
   sm_config_set_out_shift(&c,true,false,32);          // OUT shifts to right, no autopull
 
   sm_config_set_out_pins(&c, txp, 1);   // we map both OUT and side-set to the same pin, because sometimes we need to assert
   sm_config_set_sideset_pins(&c, txp);  // user data onto the pin (with OUT) and sometimes constant values (start/stop bit)
   sm_config_set_clkdiv(&c,div);
 
-  pio_sm_init(pio,tsm,txprogoffset,&c);
+  pio_sm_init(pio,tsm,txprogoffset0,&c);
   pio_sm_set_enabled(pio,tsm,true);
 
 // RX init
@@ -332,7 +350,7 @@ void port_uarton(int pn) {
   pio_gpio_init(pio,rxp);
   gpio_pull_up(rxp);
 
-  c=uart_rx_program_get_default_config(rxprogoffset);
+  c=uart_rx_program_get_default_config(rxprogoffset0);
   sm_config_set_in_pins(&c,rxp); // for WAIT, IN
   sm_config_set_jmp_pin(&c,rxp); // for JMP
   sm_config_set_in_shift(&c, true, false, 32); // shift to right, autopull disabled
@@ -345,7 +363,7 @@ void port_uarton(int pn) {
   q->txptr=-1;
   q->txlen=0;
 
-  pio_sm_init(pio,rsm,rxprogoffset,&c);
+  pio_sm_init(pio,rsm,rxprogoffset0,&c);
   switch(pn) { //!!! this is not very elegant
 case 0:pio0->inte0=0x12; break;
 case 1:pio0->inte1=0x48; break;
