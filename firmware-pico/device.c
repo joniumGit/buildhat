@@ -30,6 +30,10 @@ void device_dump(int dn) {
   for(i=0;i<MAXNMODES;i++) if(d->modes[i].name[0]) {
     ostr("  M"); odec(i); osp(); ostr(d->modes[i].name);
     ostr(" SI = "); ostr(d->modes[i].symbol); onl();
+    ostr("    format count="); odec(d->modes[i].format_count);
+              ostr( " type="); odec(d->modes[i].format_type);
+              ostr(" chars="); odec(d->modes[i].format_chars);
+              ostr(   " dp="); odec(d->modes[i].format_dp); onl();
     ostr("    RAW: "); o8hex(d->modes[i].rawl); osp(); o8hex(d->modes[i].rawh);
     ostr("    PCT: "); o8hex(d->modes[i].pctl); osp(); o8hex(d->modes[i].pcth);
     ostr("    SI: " ); o8hex(d->modes[i].sil ); osp(); o8hex(d->modes[i].sih );

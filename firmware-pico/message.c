@@ -17,24 +17,27 @@ void device_sendsys(int dn,unsigned char b) {
 // send a message with a payload
 // b0 and b1 are first and second bytes of message
 // if b1==-1 it is not sent
-// logplen is log₂ of payload length, 0..7
-void device_sendmessage(int dn,int b0,int b1,int logplen,unsigned char*payload) {
+// plen is payload length, 0..128
+void device_sendmessage(int dn,int b0,int b1,int plen,unsigned char*payload) {
   unsigned char buf[TXBLEN];
   int i,j,c;
-  CLAMP(logplen,0,7);
+  int lplen;                     // log₂ of payload length
+  CLAMP(plen,0,128);
+  for(lplen=0;lplen<7;lplen++) if(1<<lplen>=plen) break;
   j=0;
-  c=buf[j++]=(b0&0xc7)|(logplen<<3);
+  c=buf[j++]=(b0&0xc7)|(lplen<<3);
   if(b1>=0) c^=buf[j++]=b1;
-  for(i=0;i<1<<logplen;i++) c^=buf[j++]=payload[i];
+  for(i=0;i<plen    ;i++) c^=buf[j++]=payload[i];
+  for(   ;i<1<<lplen;i++) c^=buf[j++]=0;           // pad with zeros
   buf[j++]=c^0xff;                                 // insert checksum
-  for(i=0;i<j;i++) { osp(); o2hex(buf[i]); } onl();
+//  for(i=0;i<j;i++) { osp(); o2hex(buf[i]); } onl();
   port_sendmessage(dn,buf,j);
   }
 
 // convenience functions to send 1-, 2- and 4-byte messages
-void device_sendchar (int dn,int b0,int b1,unsigned char  v) { device_sendmessage(dn,b0,b1,0,(unsigned char*)&v); }
-void device_sendshort(int dn,int b0,int b1,unsigned short v) { device_sendmessage(dn,b0,b1,1,(unsigned char*)&v); }
-void device_sendint  (int dn,int b0,int b1,unsigned int   v) { device_sendmessage(dn,b0,b1,2,(unsigned char*)&v); }
+void device_sendchar (int dn,int b0,int b1,unsigned char  v) { device_sendmessage(dn,b0,b1,1,(unsigned char*)&v); }
+void device_sendshort(int dn,int b0,int b1,unsigned short v) { device_sendmessage(dn,b0,b1,2,(unsigned char*)&v); }
+void device_sendint  (int dn,int b0,int b1,unsigned int   v) { device_sendmessage(dn,b0,b1,4,(unsigned char*)&v); }
 
 // send a 2-part SELECT message that works with extended modes
 void device_sendselect(int d,int m) {
@@ -178,7 +181,7 @@ DEB_DPY {
     break;
 default:
     o1ch('P'); o1hex(pn);
-    ostr(": unrecognised data-phase message type ");o2hex(m->type);
+    ostr(": data-phase message type ");o2hex(m->type);
     ostr(" payload="); o2hexdump(m->payload,m->plen); onl();
     break;
     }

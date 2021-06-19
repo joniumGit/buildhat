@@ -15,53 +15,56 @@ static int cmdport=0;                                     // current port affect
 
 static void cmd_help() {
   ostrnl("Commands available:");
-  ostrnl("  help, ?            : display this text");
-  ostrnl("  port <port>        : select a port (default 0)");
-  ostrnl("  vin                : report main power input voltage");
-  ostrnl("  pwm                : set current port to direct PWM mode (default)");
-  ostrnl("  off                : same as pwm ; set 0");
-  ostrnl("  on                 : same as pwm ; set 1");
-//!!!  ostrnl("  pwmfreq <freq>     : set PWM frequency for all ports");
-  ostrnl("  pid <pidparams>    : set current port to PID control mode with <pidparams>");
-  ostrnl("  set <setpoint>     : configure constant set point for current port");
-  ostrnl("  set <waveparams>   : configure varying set point for current port");
-  ostrnl("  plimit <limit>     : set PID output drive limit for all ports (default 0.1)");
-  ostrnl("  select <selvar>    : send a SELECT message to select a variable and output it");
-  ostrnl("  select <selmode>   : send a SELECT message to select a mode and output all its data in raw hex");
-  ostrnl("  select             : stop outputting data");
-  ostrnl("  write1 <hexbyte>*  : send message with 1-byte header; pads if necessary, sets payload length and checksum");
-  ostrnl("  write2 <hexbyte>*  : send message with 2-byte header; pads if necessary, sets payload length and checksum");
-  ostrnl("  debug <debugcode>  : enable debugging output");
+  ostrnl("  help, ?              : display this text");
+  ostrnl("  port <port>          : select a port (default 0)");
+  ostrnl("  vin                  : report main power input voltage");
+  ostrnl("  pwm                  : set current port to direct PWM mode (default)");
+  ostrnl("  off                  : same as pwm ; set 0");
+  ostrnl("  on                   : same as pwm ; set 1");
+//!!!  ostrnl("  pwmfreq <freq>       : set PWM frequency for all ports");
+  ostrnl("  pid <pidparams>      : set current port to PID control mode with <pidparams>");
+  ostrnl("  set <setpoint>       : configure constant set point for current port");
+  ostrnl("  set <waveparams>     : configure varying set point for current port");
+  ostrnl("  plimit <limit>       : set PID output drive limit for all ports (default 0.1)");
+  ostrnl("  select <selvar>      : send a SELECT message to select a variable and output it");
+  ostrnl("  select <selmode>     : send a SELECT message to select a mode and output all its data in raw hex");
+  ostrnl("  select               : stop outputting data");
+  ostrnl("  combi <index> <list> : configure a combi mode with a list of mode/dataset specifiers");
+  ostrnl("  combi <index>        : de-configure a combi mode");
+  ostrnl("  write1 <hexbyte>*    : send message with 1-byte header; pads if necessary, sets payload length and checksum");
+  ostrnl("  write2 <hexbyte>*    : send message with 2-byte header; pads if necessary, sets payload length and checksum");
+  ostrnl("  debug <debugcode>    : enable debugging output");
   ostrnl("");
   ostrnl("Where:");
-  ostr  ("  <port>             : 0.."); odec(NPORTS-1); onl();
-  ostrnl("  <setpoint>         : -1..+1 for direct PWM; unrestricted for PID control");
-//!!!  ostrnl("  <freq>             : 0=6kHz (default); 1=12kHz; 2=24kHz; 3=48kHz");
-  ostrnl("  <pidparams>        : <pvport> <pvmode> <pvoffset> <pvformat> <pvscale> <pvunwrap> <Kp> <Ki> <Kd> <windup>");
-  ostrnl("    <pvport>         : port to fetch process variable from");
-  ostrnl("    <pvmode>         : mode to fetch process variable from");
-  ostrnl("    <pvoffset>       : process variable byte offset into mode");
-  ostrnl("    <pvformat>       : u1=unsigned byte;  s1=signed byte;");
-  ostrnl("                       u2=unsigned short; s2=signed short;");
-  ostrnl("                       u4=unsigned int;   s4=signed int;");
-  ostrnl("                       f4=float");
-  ostrnl("    <pvscale>        : process variable multiplicative scale factor");
-  ostrnl("    <pvunwrap>       : 0=no unwrapping; otherwise modulo for process variable phase unwrap");
-  ostrnl("    <Kp>, <Ki>, <Kd> : PID controller gains (Δt=1s)");
-  ostrnl("    <windup>         : PID integral windup limit");
-  ostrnl("  <waveparams>       : <shape> <min> <max> <period> <phase>");
-  ostrnl("    <shape>          : square | sine | triangle");
-  ostrnl("  <limit>            : 0..1 as fraction of maximum PWM drive");
-  ostrnl("  <selvar>           : <selmode> <seloffset> <selformat>");
-  ostrnl("    <selmode>        : mode to fetch variable from");
-  ostrnl("    <seloffset>      : variable byte offset into mode");
-  ostrnl("    <selformat>      : u1=unsigned byte;  s1=signed byte;");
-  ostrnl("                       u2=unsigned short; s2=signed short;");
-  ostrnl("                       u4=unsigned int;   s4=signed int;");
-  ostrnl("                       f4=float");
-  ostrnl("  <hexbyte>          : 1- or 2-digit hex value");
-  ostrnl("  <debugcode>        : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
-  ostrnl("                       8=DATA payload; 16=PID controller");
+  ostr  ("  <port>               : 0.."); odec(NPORTS-1); onl();
+  ostrnl("  <setpoint>           : -1..+1 for direct PWM; unrestricted for PID control");
+//!!!  ostrnl("  <freq>               : 0=6kHz (default); 1=12kHz; 2=24kHz; 3=48kHz");
+  ostrnl("  <pidparams>          : <pvport> <pvmode> <pvoffset> <pvformat> <pvscale> <pvunwrap> <Kp> <Ki> <Kd> <windup>");
+  ostrnl("    <pvport>           : port to fetch process variable from");
+  ostrnl("    <pvmode>           : mode to fetch process variable from");
+  ostrnl("    <pvoffset>         : process variable byte offset into mode");
+  ostrnl("    <pvformat>         : u1=unsigned byte;  s1=signed byte;");
+  ostrnl("                         u2=unsigned short; s2=signed short;");
+  ostrnl("                         u4=unsigned int;   s4=signed int;");
+  ostrnl("                         f4=float");
+  ostrnl("    <pvscale>          : process variable multiplicative scale factor");
+  ostrnl("    <pvunwrap>         : 0=no unwrapping; otherwise modulo for process variable phase unwrap");
+  ostrnl("    <Kp>, <Ki>, <Kd>   : PID controller gains (Δt=1s)");
+  ostrnl("    <windup>           : PID integral windup limit");
+  ostrnl("  <waveparams>         : <shape> <min> <max> <period> <phase>");
+  ostrnl("    <shape>            : square | sine | triangle");
+  ostrnl("  <limit>              : 0..1 as fraction of maximum PWM drive");
+  ostrnl("  <selvar>             : <selmode> <seloffset> <selformat>");
+  ostrnl("    <selmode>          : mode to fetch variable from");
+  ostrnl("    <seloffset>        : variable byte offset into mode");
+  ostrnl("    <selformat>        : u1=unsigned byte;  s1=signed byte;");
+  ostrnl("                         u2=unsigned short; s2=signed short;");
+  ostrnl("                         u4=unsigned int;   s4=signed int;");
+  ostrnl("                         f4=float");
+  ostrnl("  <list>               : {<mode> <dataset>}*");
+  ostrnl("  <hexbyte>            : 1- or 2-digit hex value");
+  ostrnl("  <debugcode>          : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
+  ostrnl("                         8=DATA payload; 16=PID controller");
   }
 
 static int cmd_port() {
@@ -158,6 +161,24 @@ err:
   portinfo[cmdport].selmode=-1;
   return 1;
   }
+static int cmd_combi() {
+  int i,j;
+  int n;                         // count of entries
+  unsigned char b[128];
+  if(!parseint(&i)) goto err;
+  b[0]=0x20;
+  b[1]=i;
+  for(n=0;n<15;n++) {
+    if(!parseint(&i)) break;
+    if(!parseint(&j)) goto err;
+    b[2+n]=(i<<4)+j;
+    }
+  b[0]+=n;
+  device_sendmessage(cmdport,0x44,-1,2+n,b);
+  return 0;
+err:
+  return 1;
+  }
 static int cmd_write(int nh) {   // nh=number of header bytes, 1 or 2
   int i,u,b0,b1;
   unsigned char t[128];
@@ -169,12 +190,7 @@ static int cmd_write(int nh) {   // nh=number of header bytes, 1 or 2
     if(!parsehex(&u)) break;
     t[i]=u;
     }
-  o2hex(i); osp();
-  if(i==0) t[i++]=0;
-  while(((i-1)&i)) t[i++]=0;     // pad payload to a power of 2 length
-  u=0;
-  while(i>1) u++,i>>=1;          // calculate log₂ of payload length
-  device_sendmessage(cmdport,b0,b1,u,t);
+  device_sendmessage(cmdport,b0,b1,i,t);
   return 0;
 err:
   return 1;
@@ -201,6 +217,7 @@ void proc_cmd() {
     else if(strmatch("debug"  )) { if(cmd_debug())   goto err; }
     else if(strmatch("plimit" )) { if(cmd_plimit())  goto err; }
     else if(strmatch("select" )) { if(cmd_select())  goto err; }
+    else if(strmatch("combi"  )) { if(cmd_combi())   goto err; }
     else if(strmatch("write1" )) { if(cmd_write(1))  goto err; }
     else if(strmatch("write2" )) { if(cmd_write(2))  goto err; }
     else goto err;
