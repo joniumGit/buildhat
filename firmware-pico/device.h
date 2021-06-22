@@ -13,6 +13,9 @@ struct modeinfo {
   unsigned char prefmap[2];
   char symbol[9];
   int format_count,format_type,format_chars,format_dp;
+  int combi_count;                                 // 0 if this is a normal mode
+  UC combi_mode[128];                              // the modes and datasets comprising this combi
+  UC combi_dataset[128];
   };
 
 extern struct devinfo {
@@ -27,7 +30,7 @@ extern struct devinfo {
   unsigned int hwver,swver;                        // hardware and software versions
   struct modeinfo modes[MAXNMODES];
   int ncombis;
-  unsigned short combis[MAXNCOMBIS];
+  unsigned short validcombis[MAXNCOMBIS];
   int pospid[4];                                   // position PID constants reported by device
   int speedpid[4];                                 // speed PID constants reported by device
   unsigned char modedata[MAXNMODES][128];
@@ -39,3 +42,4 @@ extern void device_dump(int dn);
 extern int device_varfrommode(int port,int mode,int offset,int format,float*var);
 extern void device_dumpmodevar(int port,int mode,int offset,int format);
 extern void device_dumpmoderaw(int port,int mode);
+extern void device_dumpmodefmt(int port,int mode);

@@ -270,7 +270,10 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         if(timers[i][3]>=100) {
           timers[i][3]-=100;
           if(portinfo[i].selmode>=0) {
-            if(portinfo[i].seloffset<0) device_dumpmoderaw(i,portinfo[i].selmode);
+            if(portinfo[i].seloffset<0) {
+//              device_dumpmoderaw(i,portinfo[i].selmode);
+              device_dumpmodefmt(i,portinfo[i].selmode);
+              }
             else                        device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
             }
           }

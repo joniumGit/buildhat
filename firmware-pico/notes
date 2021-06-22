@@ -66,3 +66,5 @@ export PICO_SDK_PATH=/home/mo/tempd/pico/pico-sdk/
 TODO
 Fix GPIO drive strengths
 Test ID margins
+Think about PID control variable from combi mode, alignment problems in device_varfrommode
+Make <selvar> just have values 0, 1, 2, 3 (i.e., only signed char/short/int plus float)

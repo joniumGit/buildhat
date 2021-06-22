@@ -16,4 +16,4 @@ extern void osdec(int u);
 extern void ofxp(unsigned int u,int q,int dp);
 extern void osfxp(int u,int q,int dp);
 extern char*sfloat(float f);
-
+extern void ofloat(float f);

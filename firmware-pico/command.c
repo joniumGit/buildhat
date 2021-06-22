@@ -165,13 +165,22 @@ static int cmd_combi() {
   int i,j;
   int n;                         // count of entries
   unsigned char b[128];
+  struct modeinfo*mp;
   if(!parseint(&i)) goto err;
+  CLAMP(i,0,7);
   b[0]=0x20;
   b[1]=i;
+  mp=&devinfo[cmdport].modes[i];
+  mp->combi_count=0;
   for(n=0;n<15;n++) {
     if(!parseint(&i)) break;
+    CLAMP(i,0,15);
     if(!parseint(&j)) goto err;
+    CLAMP(j,0,15);
     b[2+n]=(i<<4)+j;
+    mp->combi_count=n+1;
+    mp->combi_mode[n]=i;
+    mp->combi_dataset[n]=j;
     }
   b[0]+=n;
   device_sendmessage(cmdport,0x44,-1,2+n,b);

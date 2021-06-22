@@ -124,3 +124,6 @@ char*sfloat(float f) {
   return b;
   }
 
+void ofloat(float f) {
+  ostr(sfloat(f));
+  }

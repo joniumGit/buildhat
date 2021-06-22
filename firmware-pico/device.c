@@ -40,7 +40,7 @@ void device_dump(int dn) {
     onl();
     }
   for(i=0;i<d->ncombis;i++) {
-    unsigned short u=d->combis[i];
+    unsigned short u=d->validcombis[i];
     ostr("  C"); odec(i); ostr(": ");
     for(j=0;j<16;j++) {
       if(u&1) {
@@ -96,6 +96,59 @@ void device_dumpmoderaw(int port,int mode) {
   o1ch('P'); o1hex(i); ostr("R:");
   for(i=0;i<dvp->modedatalen[mode];i++) {
     osp(); o2hex(dvp->modedata[mode][i]);
+    }
+  onl();
+  }
+
+static int formattolen(int f) {
+  switch(f) {
+case 0: return 1;
+case 1: return 2;
+case 2: return 4;
+case 3: return 4;
+    }
+  return 1;
+  }
+
+static void dumpfmt(UC*p,struct modeinfo*mp) {
+  UC b[4];
+  switch(mp->format_type) {
+case 0: osdec((signed char )(p[0])); break;
+case 1: osdec((signed short)(p[0]+(p[1]<<8))); break;
+case 2: osdec((signed int  )(p[0]+(p[1]<<8)+(p[2]<<16)+(p[3]<<24))); break;
+case 3:
+    memcpy(b,p,4);
+    ofloat(*(float*)b);
+    break;
+    }
+  }
+
+void device_dumpmodefmt(int port,int mode) {
+  struct devinfo*dvp;
+  struct modeinfo*mp;
+  int i,j,k,l;
+
+  if(port<0||port>=NPORTS) return;
+  dvp=devinfo+port;
+  mp=&(dvp->modes[mode]);
+
+  if(mp->combi_count==0) {                                 //  a normal mode
+    if(dvp->modedatalen[mode]==0) return;
+    o1ch('P'); o1hex(i); o1ch('M'); odec(mode); ostr(":");
+    l=formattolen(mp->format_type);                        // number of bytes in this format
+    for(i=0,j=0;i<=dvp->modedatalen[mode]-l&&j<mp->format_count;i+=l,j++) {
+      osp();
+      dumpfmt(&(dvp->modedata[mode][i]),mp);
+      }
+  } else {
+    o1ch('P'); o1hex(i); o1ch('C'); odec(mode); ostr(":");
+    for(i=0,k=0;i<mp->combi_count;i++) {
+      j=mp->combi_mode[i];
+      l=formattolen(dvp->modes[j].format_type);
+      osp();
+      dumpfmt(&(dvp->modedata[mode][k]),&dvp->modes[j]);
+      k+=l;
+      }
     }
   onl();
   }

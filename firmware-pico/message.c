@@ -110,7 +110,7 @@ case 0x80:
       for(i=0;i<m->plen;i+=2) {
         unsigned short u=*(unsigned short*)(&m->payload[i]);
         if(u==0) break;
-        d->combis[d->ncombis++]=u;
+        d->validcombis[d->ncombis++]=u;
         }
       break;
   case 0x09:                                       // SPID  (device speed pid constants)
