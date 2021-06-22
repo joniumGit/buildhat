@@ -33,6 +33,7 @@ static void cmd_help() {
   ostrnl("  combi <index>        : de-configure a combi mode");
   ostrnl("  write1 <hexbyte>*    : send message with 1-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  write2 <hexbyte>*    : send message with 2-byte header; pads if necessary, sets payload length and checksum");
+  ostrnl("  echo <0|1>           : enable/disable echo on command port");
   ostrnl("  debug <debugcode>    : enable debugging output");
   ostrnl("");
   ostrnl("Where:");
@@ -141,6 +142,7 @@ static int cmd_set()  {
 static int cmd_on()     { cmd_set_const(1.0); return 0; }
 static int cmd_off()    { cmd_set_const(0.0); return 0; }
 static int cmd_vin()    { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
+static int cmd_echo()   { return !parseint(&echo); }
 static int cmd_debug()  { return !parseint(&debug); }
 static int cmd_plimit() { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_drive_limit,0,1); return 0; }
 static int cmd_select() {
@@ -223,12 +225,13 @@ void proc_cmd() {
     else if(strmatch("off"    )) { if(cmd_off())     goto err; }
     else if(strmatch("on"     )) { if(cmd_on())      goto err; }
     else if(strmatch("vin"    )) { if(cmd_vin())     goto err; }
-    else if(strmatch("debug"  )) { if(cmd_debug())   goto err; }
     else if(strmatch("plimit" )) { if(cmd_plimit())  goto err; }
     else if(strmatch("select" )) { if(cmd_select())  goto err; }
     else if(strmatch("combi"  )) { if(cmd_combi())   goto err; }
     else if(strmatch("write1" )) { if(cmd_write(1))  goto err; }
     else if(strmatch("write2" )) { if(cmd_write(2))  goto err; }
+    else if(strmatch("echo"   )) { if(cmd_echo())    goto err; }
+    else if(strmatch("debug"  )) { if(cmd_debug())   goto err; }
     else goto err;
     }
 err:

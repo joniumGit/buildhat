@@ -5,6 +5,8 @@
 
 #define CMDBUFLEN 256
 
+extern int echo;
+
 extern int i1chu();
 extern void o1chu(int c);
 extern void init_control();

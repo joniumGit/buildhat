@@ -13,6 +13,8 @@
 #include "hardware/irq.h"
 #include "hardware/uart.h"
 
+int echo=0;
+
 static volatile char ctrlrxbuf[CTRLRXBLEN];
 static volatile int ctrlrxhead;
 static volatile int ctrlrxtail;
@@ -263,11 +265,11 @@ void proc_ctrl() {
     if(u==0x08||u==0x7f) {
       if(cbwptr<1) continue;
       cbwptr--;
-      o1ch(0x08); osp(); o1ch(0x08);
+      if(echo) { o1ch(0x08); osp(); o1ch(0x08); }
       continue;
       }
     if(cbwptr==CMDBUFLEN) continue;                // buffer full?
-    o1ch(u);
+    if(echo) o1ch(u);
     cmdbuf[cbwptr++]=u;
     }
   }
