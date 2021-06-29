@@ -2,6 +2,8 @@
 #include "timer.h"
 #include "ioconv.h"
 #include "control.h"
+#include "../micro-ecc/uECC.h"
+#include "../sha2/sha2.h"
 
 #define BLVERSION "BuildHAT bootloader version 1.0"
 
@@ -13,17 +15,24 @@ static unsigned int tick0;
 typedef unsigned char UC;
 
 #define IMAGEBUF ((UC*)(0x20000000))             // SRAM1 block always mapped at this address
-#define IMAGEBUFSIZE (256*1024)                  // SRAM1 is 256K
+#define IMAGEBUFSIZE (240*1024)                  // SRAM1 is 256K; allow 16K for our own heap and stack
 unsigned int image_size=0;
 
 #define STX 0x02                                 // ASCII control codes
 #define ETX 0x03
+
+UC digest[SHA256_DIGEST_SIZE];                   // sha256 digest for signing
+UC signature[XXX];                   // received signature
 
 static void reset_timeout() { tick0=gettick(); }
 static int timeout() { return (int)(gettick()-tick0)>TIMEOUT; }
 
 
 static int verify(UC*buf,int len) {
+  sha256(buf,len,digest);
+  ostrnl("SHA256:");
+  for(i=0;i<sizeof(digest);i++) osp(),o2hex(digest[i]);
+  onl();
   return 1;
   }
 
@@ -149,5 +158,6 @@ int main() {
   init_control();
   for(;;)
     proc_ctrl();
+  uECC_get_rng();
   return 0;
   }

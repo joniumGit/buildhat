@@ -14,6 +14,8 @@ add_executable(main
   ioconv.c
   timer.c
   reboot.s
+  ../micro-ecc/uECC.o
+  ../sha2/sha2.o
   )
 
 # pico_enable_stdio_usb(main 1)

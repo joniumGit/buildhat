@@ -8,7 +8,17 @@ over the RP2040's default serial port pins using a simple set of commands.
 Building the bootloader
 -----------------------
 
-In the bhbl-pico directory run
+First build the ECC and SHA2 libraries, both Arm and native versions:
+
+  cd ../micro-ecc
+  arm-none-eabi-gcc -mcpu=cortex-m0 -DuECC_PLATFORM=0 -c uECC.c -o uECC.o
+  gcc -DuECC_PLATFORM=0 -c uECC.c -o uECC.native.o
+  cd ../sha2
+  arm-none-eabi-gcc -mcpu=cortex-m0 -c sha2.c -o sha2.o
+  gcc -c sha2.c -o sha2.native.o
+  cd ../bhbl-pico
+
+Then in the bhbl-pico directory run
 
   rm -r build
   mkdir -p build
