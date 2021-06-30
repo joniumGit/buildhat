@@ -6,7 +6,9 @@
 #include <termios.h>
 
 #define IMAGEBUFSIZE (240*1024)
+#define SIGSIZE 64
 unsigned char imagebuf[IMAGEBUFSIZE+1];
+unsigned char signature[SIGSIZE];
 
 #define BAUD B115200
 
@@ -116,10 +118,11 @@ int main(int ac,char**av) {
   int i;
 
   if(ac<3) {
-    fprintf(stderr,"Usage: %s <tty device> <image file>\n",av[0]);
+    fprintf(stderr,"Usage: %s <tty device> <image file> <signature file>\n",av[0]);
     return 4;
     }
   opentty(av[1]);
+
   fp=fopen(av[2],"rb");
   if(!fp) {
     fprintf(stderr,"Failed to open image file %s\n",av[2]);
@@ -134,6 +137,17 @@ int main(int ac,char**av) {
     fprintf(stderr,"Image file %s is too large (maximum %d bytes)\n",av[2],IMAGEBUFSIZE);
     return 16;
     }
+
+  fp=fopen(av[3],"rb");
+  if(!fp) {
+    fprintf(stderr,"Failed to open signature file %s\n",av[3]);
+    return 16;
+    }
+  i=fread(signature,1,SIGSIZE,fp);
+  if(i!=SIGSIZE) {
+    fprintf(stderr,"Error reading signature file %s\n",av[3]);
+    return 16;
+    }
   if(!getprompt()) goto ew0;
   ostr("clear\r");
   if(!getprompt()) goto ew0;
@@ -144,8 +158,14 @@ int main(int ac,char**av) {
   for(i=0;i<image_size;i++) och(imagebuf[i]);
   ostr("\x03\r");
   if(!getprompt()) goto ew0;
+  sprintf(s,"signature %d\r",SIGSIZE);
+  ostr(s);
+  usleep(100000);
+  ostr("\x02");
+  for(i=0;i<SIGSIZE;i++) och(signature[i]);
+  ostr("\x03\r");
+  if(!getprompt()) goto ew0;
   ostr("reboot\r");
-
   for(;;) {
     i=w1ch(-1);
     fputc(i,stderr);
@@ -158,5 +178,3 @@ ew0:
   closetty();
   return 16;
   }
-
-

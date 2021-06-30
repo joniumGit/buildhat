@@ -20,6 +20,15 @@ First build the ECC and SHA2 libraries, both Arm and native versions:
 
 Then in the bhbl-pico directory run
 
+  make
+  ./mkkeys
+
+This will create a private key in key.private.bin and a corresponding
+public key in key.public.bin; the public key also appears in C format in
+key.public.h .
+
+Now
+
   rm -r build
   mkdir -p build
   cmake ..
@@ -27,7 +36,8 @@ Then in the bhbl-pico directory run
 
 This will create files build/main.* (for example build/main.elf)
 that can be programmed into the RP2040 using openocd or similar
-tool or, in principle, over USB.
+tool or, in principle, over USB. These have the public key built
+into them.
 
 Creating an image the bootloader can use
 ----------------------------------------
@@ -44,17 +54,28 @@ that are suitable for uploading to the board using the bootloader.
 Note that this binary is intended to run from the RP2040's RAM, and
 so is not suitable for programming into its flash.
 
+Signing the image
+-----------------
+
+In the bhbl-pico directory run
+
+  make
+  ./sign ../firmware-pico/build/main.bin
+
+This creates a file signature.bin .
+
 Uploading the image
 -------------------
 
 In the bhbl-pico directory run
 
   make
-  ./upload /dev/ttyUSB0 ../firmware-pico/build/main.bin
+  ./upload /dev/ttyUSB0 ../firmware-pico/build/main.bin signature.bin
 
 with the last line suitably modified to reflect the serial device in
 use on the host. The above has been tested on an ordinary Linux PC with
 a USB serial adapter.
 
 A simple checksum is used to verify the integrity of the uploaded
-image, but there are no security features.
+image. The signature is also verified against the public key built
+into the bootloader. Note, however, that the image is not encrypted.

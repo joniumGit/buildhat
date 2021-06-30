@@ -4,6 +4,7 @@
 #include "control.h"
 #include "../micro-ecc/uECC.h"
 #include "../sha2/sha2.h"
+#include "key.public.h"
 
 #define BLVERSION "BuildHAT bootloader version 1.0"
 
@@ -21,19 +22,21 @@ unsigned int image_size=0;
 #define STX 0x02                                 // ASCII control codes
 #define ETX 0x03
 
+uECC_Curve curve;
 UC digest[SHA256_DIGEST_SIZE];                   // sha256 digest for signing
-UC signature[XXX];                   // received signature
+UC signature[64];                                // received signature
 
 static void reset_timeout() { tick0=gettick(); }
 static int timeout() { return (int)(gettick()-tick0)>TIMEOUT; }
 
 
 static int verify(UC*buf,int len) {
+  int i;
   sha256(buf,len,digest);
   ostrnl("SHA256:");
   for(i=0;i<sizeof(digest);i++) osp(),o2hex(digest[i]);
   onl();
-  return 1;
+  return uECC_verify(publickey,digest,sizeof(digest),signature,curve);
   }
 
 unsigned int checksum(UC*p,int l) {
@@ -59,18 +62,8 @@ static void cmd_help() {
   ostrnl("  reboot                   : reboot if upload successfully verified");
   }
 
-static int cmd_load() {
-  unsigned int len,cs;
+static int read_image(UC*buf,int len) {
   int c,i;
-  image_size=0;
-  if(!parseuint(&len)) return 1;
-  if(!parseuint(&cs)) return 1;
-  if(len>IMAGEBUFSIZE) {
-    ostr("\r\nImage too large (maximum ");
-    odec(IMAGEBUFSIZE);
-    ostrnl(" bytes)");
-    return 1;
-    }
   reset_timeout();
   do {
     if(timeout()) goto err_to;
@@ -81,7 +74,7 @@ static int cmd_load() {
     if(timeout()) goto err_to;
     c=i1ch();
     if(c<0) continue;
-    IMAGEBUF[i++]=c;
+    buf[i++]=c;
     reset_timeout();
     }
   reset_timeout();
@@ -89,6 +82,24 @@ static int cmd_load() {
     if(timeout()) goto err_to;
     c=i1ch();
     } while(c!=ETX);
+  return 0;
+err_to:
+  ostrnl("\r\nTimed out waiting for data");
+  return 1;
+  }
+
+static int cmd_load() {
+  unsigned int len,cs;
+  image_size=0;
+  if(!parseuint(&len)) return 1;
+  if(!parseuint(&cs)) return 1;
+  if(len>IMAGEBUFSIZE) {
+    ostr("\r\nImage too large (maximum ");
+    odec(IMAGEBUFSIZE);
+    ostrnl(" bytes)");
+    return 1;
+    }
+  if(read_image(IMAGEBUF,len)) return 1;
   ostrnl("\r\nImage received");
   if(checksum(IMAGEBUF,len)!=cs) {
     ostrnl("Checksum failure");
@@ -97,9 +108,21 @@ static int cmd_load() {
   ostrnl("Checksum OK");
   image_size=len;
   return 0;
-err_to:
-  ostrnl("\r\nTimed out waiting for data");
-  return 1;
+  }
+
+static int cmd_signature() {
+  unsigned int len;
+  image_size=0;
+  if(!parseuint(&len)) return 1;
+  if(len!=sizeof(signature)) {
+    ostr("\r\nIncorrect signature length (should be");
+    odec(sizeof(signature));
+    ostrnl(" bytes)");
+    return 1;
+    }
+  if(read_image(signature,sizeof(signature))) return 1;
+  ostrnl("\r\nSignature received");
+  return 0;
   }
 
 static int cmd_clear() { image_size=0; return 0; }
@@ -136,13 +159,14 @@ void proc_cmd() {
   for(;;) {
     skspsc();
     if(parse_eol()) goto done;
-    else if(strmatch("help"   )) cmd_help();
-    else if(strmatch("?"      )) cmd_help();
-    else if(strmatch("load"   )) { if(cmd_load())    goto err; }
-    else if(strmatch("clear"  )) { if(cmd_clear())   goto err; }
-    else if(strmatch("verify" )) { if(cmd_verify())  goto err; }
-    else if(strmatch("reboot" )) { if(cmd_reboot())  goto err; }
-    else if(strmatch("version")) { if(cmd_version()) goto err; }
+    else if(strmatch("help"     )) cmd_help();
+    else if(strmatch("?"        )) cmd_help();
+    else if(strmatch("load"     )) { if(cmd_load())      goto err; }
+    else if(strmatch("signature")) { if(cmd_signature()) goto err; }
+    else if(strmatch("clear"    )) { if(cmd_clear())     goto err; }
+    else if(strmatch("verify"   )) { if(cmd_verify())    goto err; }
+    else if(strmatch("reboot"   )) { if(cmd_reboot())    goto err; }
+    else if(strmatch("version"  )) { if(cmd_version())   goto err; }
     else goto err;
     }
 err:
@@ -156,6 +180,7 @@ done:
 int main() {
   init_timer();
   init_control();
+  curve=uECC_secp256r1();
   for(;;)
     proc_ctrl();
   uECC_get_rng();
