@@ -29,12 +29,21 @@ UC signature[64];                                // received signature
 static void reset_timeout() { tick0=gettick(); }
 static int timeout() { return (int)(gettick()-tick0)>TIMEOUT; }
 
-
+// return 1 if the signature matches the uploaded image, 0 otherwise
 static int verify(UC*buf,int len) {
   int i;
+  ostr("Verifying image length=");
+  odec(len); osp();
+  o2hex(buf[0]); osp();
+  o2hex(buf[0]); osp();
+  o2hex(buf[len-2]); osp();
+  o2hex(buf[len-1]); onl();
   sha256(buf,len,digest);
   ostrnl("SHA256:");
   for(i=0;i<sizeof(digest);i++) osp(),o2hex(digest[i]);
+  onl();
+  ostrnl("Public key:");
+  for(i=0;i<sizeof(publickey);i++) osp(),o2hex(publickey[i]);
   onl();
   return uECC_verify(publickey,digest,sizeof(digest),signature,curve);
   }
@@ -56,6 +65,8 @@ static void cmd_help() {
   ostrnl("  help, ?                  : display this text");
   ostrnl("  version                  : display version string");
   ostrnl("  load <length> <checksum> : initiate upload");
+  ostrnl("                             followed by <STX><<length> data bytes><ETX>");
+  ostrnl("  signature <length>       : upload signature");
   ostrnl("                             followed by <STX><<length> data bytes><ETX>");
   ostrnl("  clear                    : clear any uploaded image");
   ostrnl("  verify                   : verify upload");
@@ -112,7 +123,6 @@ static int cmd_load() {
 
 static int cmd_signature() {
   unsigned int len;
-  image_size=0;
   if(!parseuint(&len)) return 1;
   if(len!=sizeof(signature)) {
     ostr("\r\nIncorrect signature length (should be");
@@ -133,7 +143,7 @@ static int cmd_verify() {
     return 1;
     }
   ostrnl("Verifying image...");
-  if(verify(IMAGEBUF,IMAGEBUFSIZE)==0) {
+  if(verify(IMAGEBUF,image_size)==0) {
     ostrnl("Image verification failed");
     return 1;
     }

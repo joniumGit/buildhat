@@ -21,7 +21,7 @@ int main(int ac,char**av) {
   char s[1000];
   int image_size;
   FILE*fp;
-  int i;
+  int i,v0,v1;
   uECC_Curve c;
   c=uECC_secp256r1();
 
@@ -51,10 +51,10 @@ int main(int ac,char**av) {
     }
   fclose(fp);
 
-  printf(" Public:");
+  printf("   Public:");
   for(i=0;i<sizeof(publickey);i++) printf(" %02X",publickey[i]);
   printf("\n");
-  printf("Private:");
+  printf("  Private:");
   for(i=0;i<sizeof(privatekey);i++) printf(" %02X",privatekey[i]);
   printf("\n");
   if(ac<2) {
@@ -76,9 +76,10 @@ int main(int ac,char**av) {
     return 16;
     }
   sha256(imagebuf,image_size,digest);
-  printf("SHA256:");
-  for(i=0;i<sizeof(digest);i++) printf(" %02X",digest[i]);
-  printf("\n");
+//  printf("Image size=%d %02x %02x... %02x %02x\n",image_size,imagebuf[0],imagebuf[0],imagebuf[image_size-2],imagebuf[image_size-1]);
+//  printf("   SHA256:");
+//  for(i=0;i<sizeof(digest);i++) printf(" %02X",digest[i]);
+//  printf("\n");
   i=uECC_sign(privatekey,digest,sizeof(digest),signature,c);
   if(i==0) {
     fprintf(stderr,"Failed to generate signature\n");
@@ -87,11 +88,6 @@ int main(int ac,char**av) {
   printf("Signature:");
   for(i=0;i<sizeof(signature);i++) printf(" %02X",signature[i]);
   printf("\n");
-  i=uECC_verify(publickey,digest,sizeof(digest),signature,c);
-  printf("Verify1: %d\n",i);
-  signature[5]^=0x02;
-  i=uECC_verify(publickey,digest,sizeof(digest),signature,c);
-  printf("Verify0: %d\n",i);
   fp=fopen("signature.bin","wb");
   if(!fp) {
     fprintf(stderr,"Failed to open signature file\n");
@@ -103,5 +99,17 @@ int main(int ac,char**av) {
     return 16;
     }
   fclose(fp);
-  return 0;
+  v1=uECC_verify(publickey,digest,sizeof(digest),signature,c);
+  printf("  Verify1: %d\n",v1);
+  signature[5]^=0x02;                            // flip one bit: this should make the signature test fail
+  v0=uECC_verify(publickey,digest,sizeof(digest),signature,c);
+  printf("  Verify0: %d\n",v0);
+  if(v1==1&&v0==0) {
+    printf("Signature test passed\n");
+    return 0;
+    }
+  else {
+    printf("Signature test failed\n");
+    return 16;
+    }
   }

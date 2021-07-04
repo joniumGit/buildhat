@@ -5,12 +5,20 @@ The bootloader is intended to be programmed into the RP2040 when
 the board is manufactured. The bootloader can download a binary image
 over the RP2040's default serial port pins using a simple set of commands.
 
+Dependencies
+------------
+
+In the git "buildhat" directory:
+
+  git clone https://github.com/kmackay/micro-ecc.git
+  git clone https://github.com/ogay/sha2.git
+
 Building the bootloader
 -----------------------
 
 First build the ECC and SHA2 libraries, both Arm and native versions:
 
-  cd ../micro-ecc
+  cd micro-ecc
   arm-none-eabi-gcc -mcpu=cortex-m0 -DuECC_PLATFORM=0 -c uECC.c -o uECC.o
   gcc -DuECC_PLATFORM=0 -c uECC.c -o uECC.native.o
   cd ../sha2
@@ -24,20 +32,26 @@ Then in the bhbl-pico directory run
   ./mkkeys
 
 This will create a private key in key.private.bin and a corresponding
-public key in key.public.bin; the public key also appears in C format in
-key.public.h .
+public key in key.public.bin; the public key also appears in C header
+file format in key.public.h .
+
+********************************************************
+** NOTE THAT THIS KEY GENERATION PROCESS DOES NOT USE **
+** A CRYPTOGRAPHICALLY SECURE RANDOM NUMBER GENERATOR **
+********************************************************
 
 Now
 
   rm -r build
   mkdir -p build
+  cd build
   cmake ..
   make
+  cd ..
 
-This will create files build/main.* (for example build/main.elf)
-that can be programmed into the RP2040 using openocd or similar
-tool or, in principle, over USB. These have the public key built
-into them.
+This will create files build/main.* (for example build/main.elf) that can
+be programmed into the BuildHAT flash using openocd or similar tool or,
+in principle, over USB. These images have the public key built into them.
 
 Creating an image the bootloader can use
 ----------------------------------------
@@ -46,8 +60,10 @@ In the firmware-pico directory execute the same sequence as above
 
   rm -r build
   mkdir -p build
+  cd build
   cmake ..
   make
+  cd ..
 
 This will again create files build/main.* (for example build/main.bin)
 that are suitable for uploading to the board using the bootloader.
@@ -76,6 +92,6 @@ with the last line suitably modified to reflect the serial device in
 use on the host. The above has been tested on an ordinary Linux PC with
 a USB serial adapter.
 
-A simple checksum is used to verify the integrity of the uploaded
-image. The signature is also verified against the public key built
+A simple checksum is used initially to verify the integrity of the uploaded
+image. The signature is then also verified against the public key built
 into the bootloader. Note, however, that the image is not encrypted.
