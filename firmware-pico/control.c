@@ -111,8 +111,8 @@ void skspsc() {                                    // skip spaces and semi-colon
 int parsehex(unsigned int*p) {
   int i=cbrptr,t;
   unsigned int v=0;
-  if(!isxdigit(cmdbuf[i])) return 0;
-  while(isxdigit(cmdbuf[i])) {
+  if(!isxdigit((UC)cmdbuf[i])) return 0;
+  while(isxdigit((UC)cmdbuf[i])) {
     t=cmdbuf[i++];
     if(islower(t)) t-='a'-'A';
     if(isalpha(t)) t-='A'-10;
@@ -130,8 +130,8 @@ int parsehex(unsigned int*p) {
 int parseuint(unsigned int*p) {
   int i=cbrptr;
   unsigned int v=0;
-  if(!isdigit(cmdbuf[i])) return 0;
-  while(isdigit(cmdbuf[i])) v=v*10+cmdbuf[i++]-'0';
+  if(!isdigit((UC)cmdbuf[i])) return 0;
+  while(isdigit((UC)cmdbuf[i])) v=v*10+cmdbuf[i++]-'0';
   cbrptr=i;
   sksp();
   *p=v;
@@ -175,7 +175,7 @@ int parseq16(int*p) {
     u=0;
     m=0x01000000;                                  // 1 Q24
     for(;;) {
-      if(!isdigit(cmdbuf[cbrptr])) break;
+      if(!isdigit((UC)cmdbuf[cbrptr])) break;
       m=(m+5)/10;                                  // m goes through negative powers of 10 Q24
       u+=(cmdbuf[cbrptr++]-'0')*m;
       }
@@ -196,8 +196,8 @@ int parsefloat(float*p) {
   if     (cmdbuf[i]=='+') i++;
   else if(cmdbuf[i]=='-') i++,m0=-1;
   if(cmdbuf[i]!='.') {
-    if(!isdigit(cmdbuf[i])) return 0;
-    while(isdigit(cmdbuf[i])) {
+    if(!isdigit((UC)cmdbuf[i])) return 0;
+    while(isdigit((UC)cmdbuf[i])) {
       j++;                                         // count digits seen
       if(u<100000000) u=u*10+cmdbuf[i]-'0';
       else            m0*=10;
@@ -206,7 +206,7 @@ int parsefloat(float*p) {
     }
   if(cmdbuf[i]=='.') {
     i++;
-    while(isdigit(cmdbuf[i])) {
+    while(isdigit((UC)cmdbuf[i])) {
       j++;                                         // count digits seen
       if(u<100000000) u=u*10+cmdbuf[i]-'0',m1*=10;
       i++;

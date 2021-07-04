@@ -59,7 +59,7 @@ void go() {
       struct devinfo*d=devinfo+i;
       struct porthw*p=porthw+i;
       struct portinfo*q=portinfo+i;
-      int pin_a,pin_b;
+      int pin_a=p->pin_tx,pin_b=p->pin_rx;         // appease compiler
       if(deltat) {
         delay[i]-=deltat;
         for(j=0;j<NTIMERS;j++) timers[i][j]+=deltat;

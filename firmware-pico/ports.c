@@ -39,6 +39,7 @@ static int port_i2c_write(int p,const uint8_t*src,size_t len,bool nostop) {
 static int port_i2c_read(int p,uint8_t*dst,size_t len,bool nostop) {
   int u;
   u=i2c_read_timeout_us (porthw[p].i2c,porthw[p].i2c_add,dst,len,nostop,10000); // allow 10ms timeout
+  return u;
   }
 
 static int port_readi2cbyte(int p,int b) {
@@ -62,7 +63,6 @@ static inline void port_set_pwmamount(int p,int a) {
 // set PWM values as integer
 static void port_set_pwm_int(int pn,int pwm) {
   struct portinfo*q=portinfo+pn;
-  UC t[3];
   int lpwm=q->lastpwm;
   if(pwm==lpwm) return;
   q->lastpwm=pwm;
@@ -82,7 +82,6 @@ static void port_set_pwm_int(int pn,int pwm) {
 // +1 full power forwards
 void port_set_pwm(int p,float pwm) {
   int u;
-  UC t[3];
   CLAMP(pwm,-1,1);
   u=(int)(pwm*pwm_period+0.5);
   port_set_pwm_int(p,u);
@@ -93,7 +92,7 @@ void port_motor_brake(int pn) {
   }
 
 void port_initpwm(unsigned int period) {
-  int i,j;
+  int i;
   UC t[2];
   pwm_period=period;
   for(i=0;i<NPORTS;i++) {
@@ -413,7 +412,7 @@ static void port_uart_irq(int pn) {
   int tsm=p->txsm;
   int rsm=p->rxsm;
   struct message*m=messages+pn;
-  int b,i,s,f0,f1,f2;
+  int b,i,f0,f1,f2;
 
   if(!pio_sm_is_tx_fifo_full(pio,tsm)) {
     if(q->txptr>=0) {

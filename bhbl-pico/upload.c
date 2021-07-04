@@ -117,7 +117,7 @@ int main(int ac,char**av) {
   FILE*fp;
   int i;
 
-  if(ac<3) {
+  if(ac<4) {
     fprintf(stderr,"Usage: %s <tty device> <image file> <signature file>\n",av[0]);
     return 4;
     }

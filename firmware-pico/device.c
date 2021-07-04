@@ -93,7 +93,7 @@ void device_dumpmoderaw(int port,int mode) {
   if(port<0||port>=NPORTS) return;
   dvp=devinfo+port;
   if(dvp->modedatalen[mode]==0) return;
-  o1ch('P'); o1hex(i); ostr("R:");
+  o1ch('P'); o1hex(port); ostr("R:");
   for(i=0;i<dvp->modedatalen[mode];i++) {
     osp(); o2hex(dvp->modedata[mode][i]);
     }
@@ -134,14 +134,14 @@ void device_dumpmodefmt(int port,int mode) {
 
   if(mp->combi_count==0) {                                 //  a normal mode
     if(dvp->modedatalen[mode]==0) return;
-    o1ch('P'); o1hex(i); o1ch('M'); odec(mode); ostr(":");
+    o1ch('P'); o1hex(port); o1ch('M'); odec(mode); ostr(":");
     l=formattolen(mp->format_type);                        // number of bytes in this format
     for(i=0,j=0;i<=dvp->modedatalen[mode]-l&&j<mp->format_count;i+=l,j++) {
       osp();
       dumpfmt(&(dvp->modedata[mode][i]),mp);
       }
   } else {
-    o1ch('P'); o1hex(i); o1ch('C'); odec(mode); ostr(":");
+    o1ch('P'); o1hex(port); o1ch('C'); odec(mode); ostr(":");
     for(i=0,k=0;i<mp->combi_count;i++) {
       j=mp->combi_mode[i];
       l=formattolen(dvp->modes[j].format_type);
