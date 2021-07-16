@@ -18,6 +18,8 @@ extern struct portinfo {
   int selmode;                                     // mode selected by "select" command or -1 for none
   int seloffset;
   int selformat;
+  unsigned int selrxcount;                         // count of messages received
+  int selmodeonce;                                 // in "once only" mode for reporting data?
 
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled
   int lastpwm;                                     // integer value to which PWM was last set

@@ -32,6 +32,8 @@ static void cmd_help() {
   ostrnl("  select <selvar>      : send a SELECT message to select a variable and output it");
   ostrnl("  select <selmode>     : send a SELECT message to select a mode and output all its data in raw hex");
   ostrnl("  select               : stop outputting data");
+  ostrnl("  selonce <selvar>     : as 'select' but only report one data packet");
+  ostrnl("  selonce <selmode>    : as 'select' but only report one data packet");
   ostrnl("  combi <index> <list> : configure a combi mode with a list of mode/dataset specifiers");
   ostrnl("  combi <index>        : de-configure a combi mode");
   ostrnl("  write1 <hexbyte>*    : send message with 1-byte header; pads if necessary, sets payload length and checksum");
@@ -151,28 +153,34 @@ static int cmd_set()  {
 //  reset_block(0x01ffffff);
 //  reboot();
 //  }
-static int cmd_on()         { cmd_set_const(1.0); return 0; }
-static int cmd_off()        { cmd_set_const(0.0); return 0; }
-static int cmd_vin()        { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
-static int cmd_echo()       { return !parseint(&echo); }
-static int cmd_debug()      { return !parseint(&debug); }
-static int cmd_plimit()     { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_drive_limit,0,1); return 0; }
-static int cmd_select()     {
+static int cmd_on()          { cmd_set_const(1.0); return 0; }
+static int cmd_off()         { cmd_set_const(0.0); return 0; }
+static int cmd_vin()         { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
+static int cmd_echo()        { return !parseint(&echo); }
+static int cmd_debug()       { return !parseint(&debug); }
+static int cmd_plimit()      { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_drive_limit,0,1); return 0; }
+static int cmd_select(int f) { // f=0: normal mode; f=1 report value only once ("selonce" command)
   int u;
   if(!parseint(&u))  goto off; CLAMP(u,0,MAXNMODES-1); portinfo[cmdport].selmode=u;
   if(!parseint(&u))  goto raw; CLAMP(u,0,127);         portinfo[cmdport].seloffset=u;
   if(!parsefmt(&u))  goto err;                         portinfo[cmdport].selformat=u;
+  portinfo[cmdport].selmodeonce=f;
   device_sendselect(cmdport,portinfo[cmdport].selmode);
+  portinfo[cmdport].selrxcount=0;
   return 0;
 off:
   portinfo[cmdport].selmode=-1;
+  portinfo[cmdport].selrxcount=0;
   return 0;
 raw:
   portinfo[cmdport].seloffset=-1;
+  portinfo[cmdport].selmodeonce=f;
   device_sendselect(cmdport,portinfo[cmdport].selmode);
+  portinfo[cmdport].selrxcount=0;
   return 0;
 err:
   portinfo[cmdport].selmode=-1;
+  portinfo[cmdport].selrxcount=0;
   return 1;
   }
 static int cmd_combi() {
@@ -203,7 +211,9 @@ err:
   return 1;
   }
 static int cmd_write(int nh) {   // nh=number of header bytes, 1 or 2
-  int i,u,b0,b1;
+  int i;
+  unsigned int u;
+  unsigned int b0,b1;
   unsigned char t[128];
   if(!parsehex(&b0)) goto err;
   if(nh==2) {
@@ -238,7 +248,8 @@ void proc_cmd() {
     else if(strmatch("on"        )) { if(cmd_on())         goto err; }
     else if(strmatch("vin"       )) { if(cmd_vin())        goto err; }
     else if(strmatch("plimit"    )) { if(cmd_plimit())     goto err; }
-    else if(strmatch("select"    )) { if(cmd_select())     goto err; }
+    else if(strmatch("select"    )) { if(cmd_select(0))    goto err; }
+    else if(strmatch("selonce"   )) { if(cmd_select(1))    goto err; }
     else if(strmatch("combi"     )) { if(cmd_combi())      goto err; }
     else if(strmatch("write1"    )) { if(cmd_write(1))     goto err; }
     else if(strmatch("write2"    )) { if(cmd_write(2))     goto err; }

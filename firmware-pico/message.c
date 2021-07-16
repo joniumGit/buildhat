@@ -178,6 +178,7 @@ DEB_DPY {
       }
     memcpy(d->modedata[m->mode],m->payload,m->plen);
     d->modedatalen[m->mode]=m->plen;
+    if(m->mode==portinfo[pn].selmode) portinfo[pn].selrxcount++;
     break;
 default:
     o1ch('P'); o1hex(pn);

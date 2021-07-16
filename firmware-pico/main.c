@@ -1,6 +1,7 @@
 // port 1 ; set triangle 0 .1 1 0
 // port 1 ; set sine 0 .1 1 0
 // port 1 ; set square 0 1 2 0
+// port 1 ; set pulse 0.2 .03 2 0
 // example for position PID:
 // port 1 ; pid 1 3 0 s2 0.0027777778 1 15 0 .1 3
 // set square 0 .3 5 0
@@ -269,11 +270,11 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
           timers[i][0]-=100;
           state[i]++;
           }
+        if(portinfo[i].selrxcount==0) timers[i][3]=0;      // hold timer reset until we receive at least one message
         if(timers[i][3]>=100) {
           timers[i][3]-=100;
           if(portinfo[i].selmode>=0) {
             if(portinfo[i].seloffset<0) {
-//              device_dumpmoderaw(i,portinfo[i].selmode);
               device_dumpmodefmt(i,portinfo[i].selmode);
               }
             else                        device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
