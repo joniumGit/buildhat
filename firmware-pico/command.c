@@ -10,6 +10,9 @@
 #include "debug.h"
 #include "ioconv.h"
 #include "control.h"
+//#include "hardware/resets.h"
+
+extern void reboot();
 
 static int cmdport=0;                                     // current port affected by commands
 
@@ -35,6 +38,7 @@ static void cmd_help() {
   ostrnl("  write2 <hexbyte>*    : send message with 2-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  echo <0|1>           : enable/disable echo on command port");
   ostrnl("  debug <debugcode>    : enable debugging output");
+//  ostrnl("  bootloader           : reset into bootloader");
   ostrnl("");
   ostrnl("Where:");
   ostr  ("  <port>               : 0.."); odec(NPORTS-1); onl();
@@ -52,8 +56,10 @@ static void cmd_help() {
   ostrnl("    <pvunwrap>         : 0=no unwrapping; otherwise modulo for process variable phase unwrap");
   ostrnl("    <Kp>, <Ki>, <Kd>   : PID controller gains (Δt=1s)");
   ostrnl("    <windup>           : PID integral windup limit");
-  ostrnl("  <waveparams>         : <shape> <min> <max> <period> <phase>");
-  ostrnl("    <shape>            : square | sine | triangle");
+  ostrnl("  <waveparams>         : square   <min> <max> <period> <phase>");
+  ostrnl("                       | sine     <min> <max> <period> <phase>");
+  ostrnl("                       | triangle <min> <max> <period> <phase>");
+  ostrnl("                       | pulse    <during> <after> <length> 0");
   ostrnl("  <limit>              : 0..1 as fraction of maximum PWM drive");
   ostrnl("  <selvar>             : <selmode> <seloffset> <selformat>");
   ostrnl("    <selmode>          : mode to fetch variable from");
@@ -123,11 +129,12 @@ static int cmd_set_wave(int shape) {
   if(!parsefloat(&phase))  return 1;
   CLAMP(period,2*PWM_UPDATE/1000.0,1e30);
   CLAMP(phase,0,1);
-  portinfo[cmdport].spwaveshape =shape;
-  portinfo[cmdport].spwavemin   =min;
-  portinfo[cmdport].spwavemax   =max;
-  portinfo[cmdport].spwaveperiod=period;
-  portinfo[cmdport].spwavephase =phase;
+  portinfo[cmdport].spwaveshape   =shape;
+  portinfo[cmdport].spwavemin     =min;
+  portinfo[cmdport].spwavemax     =max;
+  portinfo[cmdport].spwaveperiod  =period;
+  portinfo[cmdport].spwavephase   =phase;
+  portinfo[cmdport].spwavephaseacc=0;
   return 0;
   }
 static int cmd_set()  {
@@ -135,17 +142,22 @@ static int cmd_set()  {
   if(strmatch("square"))   return cmd_set_wave(WAVE_SQUARE);
   if(strmatch("sine"))     return cmd_set_wave(WAVE_SINE);
   if(strmatch("triangle")) return cmd_set_wave(WAVE_TRI);
+  if(strmatch("pulse"))    return cmd_set_wave(WAVE_PULSE);
   if(!parsefloat(&u)) return 1;
   cmd_set_const(u);
   return 0;
   }
-static int cmd_on()     { cmd_set_const(1.0); return 0; }
-static int cmd_off()    { cmd_set_const(0.0); return 0; }
-static int cmd_vin()    { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
-static int cmd_echo()   { return !parseint(&echo); }
-static int cmd_debug()  { return !parseint(&debug); }
-static int cmd_plimit() { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_drive_limit,0,1); return 0; }
-static int cmd_select() {
+//static int cmd_bootloader() {
+//  reset_block(0x01ffffff);
+//  reboot();
+//  }
+static int cmd_on()         { cmd_set_const(1.0); return 0; }
+static int cmd_off()        { cmd_set_const(0.0); return 0; }
+static int cmd_vin()        { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
+static int cmd_echo()       { return !parseint(&echo); }
+static int cmd_debug()      { return !parseint(&debug); }
+static int cmd_plimit()     { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_drive_limit,0,1); return 0; }
+static int cmd_select()     {
   int u;
   if(!parseint(&u))  goto off; CLAMP(u,0,MAXNMODES-1); portinfo[cmdport].selmode=u;
   if(!parseint(&u))  goto raw; CLAMP(u,0,127);         portinfo[cmdport].seloffset=u;
@@ -215,23 +227,24 @@ void proc_cmd() {
   for(;;) {
     skspsc();
     if(parse_eol()) goto done;
-    else if(strmatch("help"   )) cmd_help();
-    else if(strmatch("?"      )) cmd_help();
-    else if(strmatch("port"   )) { if(cmd_port())    goto err; }
-    else if(strmatch("pwm"    )) { if(cmd_pwm())     goto err; }
+    else if(strmatch("help"      )) cmd_help();
+    else if(strmatch("?"         )) cmd_help();
+    else if(strmatch("port"      )) { if(cmd_port())       goto err; }
+    else if(strmatch("pwm"       )) { if(cmd_pwm())        goto err; }
 //!!!    else if(strmatch("pwmfreq")) { if(cmd_pwmfreq()) goto err; }
-    else if(strmatch("pid"    )) { if(cmd_pid())     goto err; }
-    else if(strmatch("set"    )) { if(cmd_set())     goto err; }
-    else if(strmatch("off"    )) { if(cmd_off())     goto err; }
-    else if(strmatch("on"     )) { if(cmd_on())      goto err; }
-    else if(strmatch("vin"    )) { if(cmd_vin())     goto err; }
-    else if(strmatch("plimit" )) { if(cmd_plimit())  goto err; }
-    else if(strmatch("select" )) { if(cmd_select())  goto err; }
-    else if(strmatch("combi"  )) { if(cmd_combi())   goto err; }
-    else if(strmatch("write1" )) { if(cmd_write(1))  goto err; }
-    else if(strmatch("write2" )) { if(cmd_write(2))  goto err; }
-    else if(strmatch("echo"   )) { if(cmd_echo())    goto err; }
-    else if(strmatch("debug"  )) { if(cmd_debug())   goto err; }
+    else if(strmatch("pid"       )) { if(cmd_pid())        goto err; }
+    else if(strmatch("set"       )) { if(cmd_set())        goto err; }
+    else if(strmatch("off"       )) { if(cmd_off())        goto err; }
+    else if(strmatch("on"        )) { if(cmd_on())         goto err; }
+    else if(strmatch("vin"       )) { if(cmd_vin())        goto err; }
+    else if(strmatch("plimit"    )) { if(cmd_plimit())     goto err; }
+    else if(strmatch("select"    )) { if(cmd_select())     goto err; }
+    else if(strmatch("combi"     )) { if(cmd_combi())      goto err; }
+    else if(strmatch("write1"    )) { if(cmd_write(1))     goto err; }
+    else if(strmatch("write2"    )) { if(cmd_write(2))     goto err; }
+    else if(strmatch("echo"      )) { if(cmd_echo())       goto err; }
+    else if(strmatch("debug"     )) { if(cmd_debug())      goto err; }
+//    else if(strmatch("bootloader")) cmd_bootloader();
     else goto err;
     }
 err:

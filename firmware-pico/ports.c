@@ -52,11 +52,13 @@ static int port_readi2cbyte(int p,int b) {
 
 static inline void port_set_pwmflags(int p,int f) {
   UC t[2]={0x4c,f};
+//  o1ch('F'); odec(f);
   port_i2c_write(p,t,2,0);
   }
 
 static inline void port_set_pwmamount(int p,int a) {
   UC t[3]={0x7f,a&0xff,a>>8};
+//  o1ch('A'); odec(a);
   port_i2c_write(p,t,3,0);
   }
 

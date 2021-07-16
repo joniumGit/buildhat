@@ -20,6 +20,7 @@ add_executable(main
   ports.c
   pwm_pid.c
   timer.c
+  reboot.s
   )
 
 pico_generate_pio_header(main ${CMAKE_CURRENT_LIST_DIR}/uart_tx.pio)

@@ -53,7 +53,15 @@ void proc_pwm(int pn) {
   float err,derr;
 
   u=p->spwavephaseacc+(PWM_UPDATE/1000.0);
-  if(u>=p->spwaveperiod) u-=p->spwaveperiod;
+  if(u>=p->spwaveperiod) {
+    u-=p->spwaveperiod;
+    if(p->spwaveshape==WAVE_PULSE) {               // end of a pulse?
+      p->spwaveshape =WAVE_SQUARE;                 // return to constant level
+      p->spwavemin   =p->spwavemax;
+      p->spwaveperiod=1;
+      p->spwavephase =0;
+      }
+    }
   if(u>=p->spwaveperiod) u=0;
   p->spwavephaseacc=u;
   u/=p->spwaveperiod;
@@ -72,6 +80,9 @@ case WAVE_SINE:
 case WAVE_TRI:
     if(u>=0.5) u=1-u;
     u=p->spwavemin+(p->spwavemax-p->spwavemin)*u*2;
+    break;
+case WAVE_PULSE:
+    u=p->spwavemin;
     break;
     }
   p->setpoint=u;

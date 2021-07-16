@@ -95,6 +95,7 @@ int getprompt() {
         och(0x0d);
         t=0;
         u++;
+//        if(u==5) ostr("bootloader\r");
         if(u==10) return 0;
         }
       t++;

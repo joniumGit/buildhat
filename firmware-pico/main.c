@@ -7,6 +7,8 @@
 // set triangle 0 .3 .5 0
 // (non-working) example for speed PID:
 // port 1 ; pid 1 1 0 s1 1 0 0.1 0 0 3
+// pid 0 1 0 s1 1 0 0.01 0 0 3 ; set 5
+
 
 #include <string.h>
 #include "common.h"
