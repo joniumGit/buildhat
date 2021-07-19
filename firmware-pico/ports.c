@@ -21,8 +21,6 @@
 
 static UC driverdata[NPORTS][DRIVERBYTES];
 
-unsigned int pwm_period=PWM_PERIOD_DEFAULT;
-
 struct portinfo portinfo[NPORTS];
 struct message messages[NPORTS];
 volatile struct message mqueue[NPORTS][MQLEN];
@@ -50,16 +48,22 @@ static int port_readi2cbyte(int p,int b) {
   return t;
   }
 
-static inline void port_set_pwmflags(int p,int f) {
-  UC t[2]={0x4c,f};
-//  o1ch('F'); odec(f);
+static inline void port_setreg(int p,int r,int d) {
+  UC t[2]={r,d};
   port_i2c_write(p,t,2,0);
   }
 
-static inline void port_set_pwmamount(int p,int a) {
-  UC t[3]={0x7f,a&0xff,a>>8};
-//  o1ch('A'); odec(a);
+static inline void port_set2reg(int p,int r,int d0,int d1) {
+  UC t[3]={r,d0,d1};
   port_i2c_write(p,t,3,0);
+  }
+
+static inline void port_set_pwmflags(int p,int f) {
+  port_setreg(p,0x4C,f);
+  }
+
+static inline void port_set_pwmamount(int p,int a) {
+  port_set2reg(p,0xA1,a,0x01);  // set PWM0 initial duty cycle value [7:0]; set I2C trigger for PWM0 to Update duty cycle value
   }
 
 // set PWM values as integer
@@ -85,7 +89,7 @@ static void port_set_pwm_int(int pn,int pwm) {
 void port_set_pwm(int p,float pwm) {
   int u;
   CLAMP(pwm,-1,1);
-  u=(int)(pwm*pwm_period+0.5);
+  u=(int)(pwm*PWM_PERIOD+0.5);
   port_set_pwm_int(p,u);
   }
 
@@ -93,16 +97,11 @@ void port_motor_brake(int pn) {
 //!!!
   }
 
-void port_initpwm(unsigned int period) {
+void port_initpwm() {
   int i;
-  UC t[2];
-  pwm_period=period;
   for(i=0;i<NPORTS;i++) {
     portinfo[i].lastpwm=0x7fffffff; // dummy value
     port_set_pwm_int(i,0);
-    t[0]=0x86; // period ~ 256 clocks
-    t[1]=0x3f;
-    port_i2c_write(i,t,2,0);
     }
   }
 
@@ -120,10 +119,21 @@ void port_resetdriver(int p) {
   }
 
 void port_initdriver(int p) {
-  UC t[3]={0x6a,0x00,0x00}; // disable pull-ups/downs on GPIO5/6
-  port_i2c_write(p,t,3,0);
-  t[0]=0x67; t[1]=0x6a; t[2]=0x15;
-  port_i2c_write(p,t,3,0); // enable 10kΩ pull-ups and Schmitt triggers on SCL, SDA
+  port_setreg(p,0x6A,0x00);
+  port_setreg(p,0x6B,0x00); // disable pull-ups/downs on GPIO5/6
+  port_setreg(p,0x67,0x6A);
+  port_setreg(p,0x68,0x15); // enable 10kΩ pull-ups and Schmitt triggers on SCL, SDA
+  port_setreg(p,0x5C,0x20); // set PWM0 Period CLK to OSC1 Flex-Div
+  port_setreg(p,0x5D,0x03); // set OSC1 Flex-Div to 4
+  port_setreg(p,0x9D,0x0E); // set 2-bit LUT2 Logic to OR
+  port_setreg(p,0x19,0x7A); // connection 2-bit LUT2 IN1 to I2C OUT7  Connection 2-bit LUT2 IN0 to PWM0 OUT+
+  port_setreg(p,0x1A,0x06); //
+  port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x0C,0x03); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x3C,0x16); // connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
+  port_setreg(p,0xB9,0x09); // set PWM0 to flex-Div clock
+  port_setreg(p,0x4c,0x70); // clear fault flags
+  port_setreg(p,0x4C,0x7F); // enable fault flags
   }
 
 //void port_setpin6(int p,int s) {
@@ -218,9 +228,9 @@ void init_ports() {
     odec(i);
     for(j=0;j<DRIVERBYTES;j++) {
       driverdata[i][j]=port_readi2cbyte(i,j);
-//      o2hex(driverdata[i][j]);
-//      if(j%16==15) onl();
-//      else         osp();
+      o2hex(driverdata[i][j]);
+      if(j%16==15) onl();
+      else         osp();
       }
     }
   onl();
@@ -247,7 +257,7 @@ void init_ports() {
   irq_set_exclusive_handler(PIO1_IRQ_0,port2_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_1,port3_uart_irq);
 
-  port_initpwm(PWM_PERIOD_DEFAULT);
+  port_initpwm();
 //  // test for PWM glitches
 //  for(;;) {
 //    for(i=2;i<4;i++) {

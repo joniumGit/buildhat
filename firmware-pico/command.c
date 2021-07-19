@@ -24,7 +24,6 @@ static void cmd_help() {
   ostrnl("  pwm                  : set current port to direct PWM mode (default)");
   ostrnl("  off                  : same as pwm ; set 0");
   ostrnl("  on                   : same as pwm ; set 1");
-//!!!  ostrnl("  pwmfreq <freq>       : set PWM frequency for all ports");
   ostrnl("  pid <pidparams>      : set current port to PID control mode with <pidparams>");
   ostrnl("  set <setpoint>       : configure constant set point for current port");
   ostrnl("  set <waveparams>     : configure varying set point for current port");
@@ -45,7 +44,6 @@ static void cmd_help() {
   ostrnl("Where:");
   ostr  ("  <port>               : 0.."); odec(NPORTS-1); onl();
   ostrnl("  <setpoint>           : -1..+1 for direct PWM; unrestricted for PID control");
-//!!!  ostrnl("  <freq>               : 0=6kHz (default); 1=12kHz; 2=24kHz; 3=48kHz");
   ostrnl("  <pidparams>          : <pvport> <pvmode> <pvoffset> <pvformat> <pvscale> <pvunwrap> <Kp> <Ki> <Kd> <windup>");
   ostrnl("    <pvport>           : port to fetch process variable from");
   ostrnl("    <pvmode>           : mode to fetch process variable from");
@@ -86,13 +84,6 @@ static int cmd_port() {
 static int cmd_pwm()  {
   portinfo[cmdport].setpoint=0;
   portinfo[cmdport].pwmmode=0;
-  return 0;
-  }
-static int cmd_pwmfreq()  {
-  unsigned int u;
-  if(!parseuint(&u)) return 1;
-  CLAMP(u,0,3);
-  port_initpwm(PWM_PERIOD_DEFAULT>>u);
   return 0;
   }
 static int cmd_pid()  {

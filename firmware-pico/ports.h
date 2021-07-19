@@ -3,8 +3,7 @@
 #define DRIVERBYTES 256                            // driver configuration bits address space
 
 #define TXBLEN 132                                 // maximum message length
-#define PWM_PERIOD_DEFAULT 256                     // in units of 40ns (25MHz)
-extern unsigned int pwm_period;
+#define PWM_PERIOD 256                             // in units of !!!
 
 extern struct portinfo {
   unsigned int lasttick;                           // tick when last character seen
@@ -58,7 +57,7 @@ extern struct message {
 extern volatile struct message mqueue[NPORTS][MQLEN];
 extern volatile int mqhead[NPORTS],mqtail[NPORTS]; // if head==tail then the queue is empty
 
-extern void port_initpwm(unsigned int period);
+extern void port_initpwm();
 extern void init_ports();
 extern unsigned int port_state56(int pn);
 extern void port_set_pwm(int pn,float pwm);
