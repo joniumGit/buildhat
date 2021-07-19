@@ -68,3 +68,31 @@ Fix GPIO drive strengths
 Test ID margins
 Think about PID control variable from combi mode, alignment problems in device_varfrommode
 Make <selvar> just have values 0, 1, 2, 3 (i.e., only signed char/short/int plus float)
+
+I²C commands:
+
+Initialisation :
+
+ # Addr Data Function
+ 1 0x5C 0x20 Set PWM0 Period CLK to OSC1 Flex-Div
+ 2 0x5D 0x03 Set OSC1 Flex-Div to 4
+ 3 0x9D 0x0E Set 2-bit LUT2 Logic to OR
+ 4 0x19 0x7A Connection 2-bit LUT2 IN1 to I2C OUT7  Connection 2-bit LUT2 IN0 to PWM0 OUT+
+ 5 0x1A 0x06
+ 6 0x09 0x03 Connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
+ 7 0x0C 0x03 Connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
+ 8 0x3C 0x16 Connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
+ 9 0xB9 0x09 Set PWM0 to flex-Div clock
+10 0x4c 0x70 Clear fault flags
+11 0x4C 0x7F Enable fault flags
+
+For changing Duty Cycle:
+
+ # Address, hex Data, hex Function
+ 1 0xA1 0x00 to 0xFF Set PWM0 Initial Duty Cycle value [7:0]. Default: 0x00
+ 2 0xA2 0x01 Set I2C trigger for PWM0 to Update duty cycle value
+
+The your using the old 10bit design with the period reduce by a quarter (
+0x86, 0x3f write ) to give 8 bits
+
+so in port init add the follow I2c write address 0x59 = 0x2A
