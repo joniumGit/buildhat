@@ -37,7 +37,7 @@ static void cmd_help() {
   ostrnl("  combi <index>        : de-configure a combi mode");
   ostrnl("  write1 <hexbyte>*    : send message with 1-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  write2 <hexbyte>*    : send message with 2-byte header; pads if necessary, sets payload length and checksum");
-  ostrnl("  echo <0|1>           : enable/disable echo on command port");
+  ostrnl("  echo <0|1>           : enable/disable echo and prompt on command port");
   ostrnl("  debug <debugcode>    : enable debugging output");
 //  ostrnl("  bootloader           : reset into bootloader");
   ostrnl("");
@@ -220,8 +220,10 @@ err:
   return 1;
   }
 
-
-void cmd_prompt() { o1ch('P'); odec(cmdport); o1ch('>'); }
+void cmd_prompt() {
+  if(!echo) return;
+  o1ch('P'); odec(cmdport); o1ch('>');
+  }
 
 void proc_cmd() {
   parse_reset();
