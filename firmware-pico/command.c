@@ -27,7 +27,8 @@ static void cmd_help() {
   ostrnl("  pid <pidparams>      : set current port to PID control mode with <pidparams>");
   ostrnl("  set <setpoint>       : configure constant set point for current port");
   ostrnl("  set <waveparams>     : configure varying set point for current port");
-  ostrnl("  plimit <limit>       : set PID output drive limit for all ports (default 0.1)");
+  ostrnl("  bias <bias>          : set bias offset for motor drive on current port (default 0)");
+  ostrnl("  plimit <limit>       : set PWM output drive limit for all ports (default 0.1) after bias mapping");
   ostrnl("  select <selvar>      : send a SELECT message to select a variable and output it");
   ostrnl("  select <selmode>     : send a SELECT message to select a mode and output all its data in raw hex");
   ostrnl("  select               : stop outputting data");
@@ -43,7 +44,7 @@ static void cmd_help() {
   ostrnl("");
   ostrnl("Where:");
   ostr  ("  <port>               : 0.."); odec(NPORTS-1); onl();
-  ostrnl("  <setpoint>           : -1..+1 for direct PWM; unrestricted for PID control");
+  ostrnl("  <setpoint>           : –1..+1 for direct PWM; unrestricted for PID control");
   ostrnl("  <pidparams>          : <pvport> <pvmode> <pvoffset> <pvformat> <pvscale> <pvunwrap> <Kp> <Ki> <Kd> <windup>");
   ostrnl("    <pvport>           : port to fetch process variable from");
   ostrnl("    <pvmode>           : mode to fetch process variable from");
@@ -61,6 +62,10 @@ static void cmd_help() {
   ostrnl("                       | triangle <min> <max> <period> <phase>");
   ostrnl("                       | pulse    <during> <after> <length> 0");
   ostrnl("  <limit>              : 0..1 as fraction of maximum PWM drive");
+  ostrnl("  <bias>               : 0..1 set biased motor drive mapping");
+  ostrnl("                         (0,+1] offset by +bias");
+  ostrnl("                         0 mapped to 0");
+  ostrnl("                         [–1,0) offset by –bias");
   ostrnl("  <selvar>             : <selmode> <seloffset> <selformat>");
   ostrnl("    <selmode>          : mode to fetch variable from");
   ostrnl("    <seloffset>        : variable byte offset into mode");
@@ -149,7 +154,20 @@ static int cmd_off()         { cmd_set_const(0.0); return 0; }
 static int cmd_vin()         { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
 static int cmd_echo()        { return !parseint(&echo); }
 static int cmd_debug()       { return !parseint(&debug); }
-static int cmd_plimit()      { if(!parsefloat(&pid_drive_limit)) return 1; CLAMP(pid_drive_limit,0,1); return 0; }
+static int cmd_plimit()      {
+  float u;
+  if(!parsefloat(&u)) return 1;
+  CLAMP(u,0,1);
+  pwm_drive_limit=(int)(u*65536+0.5); // Q16
+  return 0;
+  }
+static int cmd_bias()        {
+  float u;
+  if(!parsefloat(&u)) return 1;
+  CLAMP(u,0,1);
+  portinfo[cmdport].bias=(int)(u*65536+0.5); // Q16
+  return 0;
+  }
 static int cmd_select(int f) { // f=0: normal mode; f=1 report value only once ("selonce" command)
   int u;
   if(!parseint(&u))  goto off; CLAMP(u,0,MAXNMODES-1); portinfo[cmdport].selmode=u;
@@ -240,6 +258,7 @@ void proc_cmd() {
     else if(strmatch("off"       )) { if(cmd_off())        goto err; }
     else if(strmatch("on"        )) { if(cmd_on())         goto err; }
     else if(strmatch("vin"       )) { if(cmd_vin())        goto err; }
+    else if(strmatch("bias"      )) { if(cmd_bias())       goto err; }
     else if(strmatch("plimit"    )) { if(cmd_plimit())     goto err; }
     else if(strmatch("select"    )) { if(cmd_select(0))    goto err; }
     else if(strmatch("selonce"   )) { if(cmd_select(1))    goto err; }

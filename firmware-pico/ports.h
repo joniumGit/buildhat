@@ -4,6 +4,7 @@
 
 #define TXBLEN 132                                 // maximum message length
 #define PWM_PERIOD 255                             // in units of ~40μs/255
+extern int pwm_drive_limit;
 
 extern struct portinfo {
   unsigned int lasttick;                           // tick when last character seen
@@ -22,6 +23,7 @@ extern struct portinfo {
 
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled
   int lastpwm;                                     // integer value to which PWM was last set
+  int bias;                                        // bias offset Q16
   float setpoint;                                  // PID/direct PWM setpoint
   int spwaveshape;                                 // set point wave generator
   float spwavemin;

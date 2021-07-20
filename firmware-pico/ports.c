@@ -20,6 +20,8 @@
 #include "uart_rx.pio.h"
 
 static UC driverdata[NPORTS][DRIVERBYTES];
+int pwm_drive_limit=6554; // 0.1 Q16
+
 
 struct portinfo portinfo[NPORTS];
 struct message messages[NPORTS];
@@ -86,10 +88,15 @@ static void port_set_pwm_int(int pn,int pwm) {
 // set PWM values according to pwm:
 // -1 full power reverse
 // +1 full power forwards
+// applying bias mapping and then power limit
 void port_set_pwm(int p,float pwm) {
   int u;
   CLAMP(pwm,-1,1);
-  u=(int)(pwm*PWM_PERIOD+0.5);
+  u=((int)(pwm*131072)+1)/2; // rounded Q16
+  if(u>0) u+=portinfo[p].bias;
+  if(u<0) u-=portinfo[p].bias;
+  CLAMP(u,-pwm_drive_limit,pwm_drive_limit);
+  u=(u*PWM_PERIOD+PWM_PERIOD/2)>>16; // map to ±PWM_PERIOD
   port_set_pwm_int(p,u);
   }
 

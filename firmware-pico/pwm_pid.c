@@ -7,8 +7,6 @@
 #include "debug.h"
 #include "control.h"
 
-float pid_drive_limit=0.1;
-
 static const float sintab[256]={
    0.00000, 0.02454, 0.04907, 0.07356, 0.09802, 0.12241, 0.14673, 0.17096,
    0.19509, 0.21910, 0.24298, 0.26671, 0.29028, 0.31368, 0.33689, 0.35990,
@@ -112,11 +110,7 @@ DEB_PID { o1ch('P'); o1hex(pn); ostr(": pv="); ostr(sfloat(p->pid_pv)); ostr(" s
   CLAMP(p->pid_ierr,-p->windup,p->windup);
 DEB_PID { ostr(": e="); ostr(sfloat(err)); ostr(" ie="); ostr(sfloat(p->pid_ierr)); ostr(" de="); ostr(sfloat(derr)); }
   u=-(err*p->Kp+p->pid_ierr*p->Ki+derr*p->Kd);
-DEB_PID { ostr(" cv="); ostr(sfloat(u)); }
-  if(u>0&&u< 0.25) u=0;
-  if(u<0&&u>-0.25) u=0;
-  CLAMP(u,-pid_drive_limit,pid_drive_limit);
-DEB_PID { ostr(" -> "); ostr(sfloat(u)); onl(); }
+DEB_PID { ostr(" cv="); ostr(sfloat(u)); onl(); }
   port_set_pwm(pn,u);
   return;
   }
