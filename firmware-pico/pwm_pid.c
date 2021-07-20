@@ -60,6 +60,7 @@ void proc_pwm(int pn) {
       p->spwavemin   =p->spwavemax;
       p->spwaveperiod=1;
       p->spwavephase =0;
+      o1ch('P'); o1hex(pn); ostrnl(": pulse done");
       }
     }
   if(u>=p->spwaveperiod) u=0;

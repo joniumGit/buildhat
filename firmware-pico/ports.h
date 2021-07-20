@@ -3,7 +3,7 @@
 #define DRIVERBYTES 256                            // driver configuration bits address space
 
 #define TXBLEN 132                                 // maximum message length
-#define PWM_PERIOD 256                             // in units of !!!
+#define PWM_PERIOD 255                             // in units of ~40μs/255
 
 extern struct portinfo {
   unsigned int lasttick;                           // tick when last character seen

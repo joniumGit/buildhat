@@ -131,8 +131,8 @@ void port_initdriver(int p) {
   port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
   port_setreg(p,0x0C,0x03); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
   port_setreg(p,0x3C,0x16); // connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
-  port_setreg(p,0xB9,0x09); // set PWM0 to flex-Div clock
-  port_setreg(p,0x4c,0x70); // clear fault flags
+  port_setreg(p,0xB6,0x09); // set PWM0 to flex-Div clock
+  port_setreg(p,0x4C,0x70); // clear fault flags
   port_setreg(p,0x4C,0x7F); // enable fault flags
   }
 
@@ -223,35 +223,21 @@ void init_ports() {
   onl();
   wait_ticks(100);
 
-  ostr("Reading driver dumps: before port_initdriver()");
+  ostr("Reading driver dumps: before port_initdriver(): ");
   for(i=0;i<NPORTS;i++) {
     odec(i);
     for(j=0;j<DRIVERBYTES;j++) {
       driverdata[i][j]=port_readi2cbyte(i,j);
-      if(i==0) {
-        o2hex(driverdata[i][j]);
-        if(j%16==15) onl();
-        else         osp();
-        }
+//      if(i==0) {
+//        o2hex(driverdata[i][j]);
+//        if(j%16==15) onl();
+//        else         osp();
+//        }
       }
     }
   onl();
 
   for(i=0;i<NPORTS;i++) port_initdriver(i);
-
-  ostr("Reading driver dumps: after port_initdriver()");
-  for(i=0;i<NPORTS;i++) {
-    odec(i);
-    for(j=0;j<DRIVERBYTES;j++) {
-      driverdata[i][j]=port_readi2cbyte(i,j);
-      if(i==0) {
-        o2hex(driverdata[i][j]);
-        if(j%16==15) onl();
-        else         osp();
-        }
-      }
-    }
-  onl();
 
   pio_clear_instruction_memory(pio0);
   pio_clear_instruction_memory(pio1);

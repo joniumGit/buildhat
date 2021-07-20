@@ -82,8 +82,8 @@ Initialisation :
  6 0x09 0x03 Connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
  7 0x0C 0x03 Connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
  8 0x3C 0x16 Connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
- 9 0xB9 0x09 Set PWM0 to flex-Div clock
-10 0x4c 0x70 Clear fault flags
+ 9 0xB6 0x09 Set PWM0 to flex-Div clock
+10 0x4C 0x70 Clear fault flags
 11 0x4C 0x7F Enable fault flags
 
 For changing Duty Cycle:
