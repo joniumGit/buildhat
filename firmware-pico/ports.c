@@ -121,8 +121,8 @@ void port_resetdriver(int p) {
 void port_initdriver(int p) {
   port_setreg(p,0x6A,0x00);
   port_setreg(p,0x6B,0x00); // disable pull-ups/downs on GPIO5/6
-  port_setreg(p,0x67,0x6A);
-  port_setreg(p,0x68,0x15); // enable 10kΩ pull-ups and Schmitt triggers on SCL, SDA
+//  port_setreg(p,0x67,0x6A);
+//  port_setreg(p,0x68,0x15); // enable 10kΩ pull-ups and Schmitt triggers on SCL, SDA !!!
   port_setreg(p,0x5C,0x20); // set PWM0 Period CLK to OSC1 Flex-Div
   port_setreg(p,0x5D,0x03); // set OSC1 Flex-Div to 4
   port_setreg(p,0x9D,0x0E); // set 2-bit LUT2 Logic to OR
@@ -223,19 +223,35 @@ void init_ports() {
   onl();
   wait_ticks(100);
 
-  ostr("Reading driver dumps: ");
+  ostr("Reading driver dumps: before port_initdriver()");
   for(i=0;i<NPORTS;i++) {
     odec(i);
     for(j=0;j<DRIVERBYTES;j++) {
       driverdata[i][j]=port_readi2cbyte(i,j);
-      o2hex(driverdata[i][j]);
-      if(j%16==15) onl();
-      else         osp();
+      if(i==0) {
+        o2hex(driverdata[i][j]);
+        if(j%16==15) onl();
+        else         osp();
+        }
       }
     }
   onl();
 
   for(i=0;i<NPORTS;i++) port_initdriver(i);
+
+  ostr("Reading driver dumps: after port_initdriver()");
+  for(i=0;i<NPORTS;i++) {
+    odec(i);
+    for(j=0;j<DRIVERBYTES;j++) {
+      driverdata[i][j]=port_readi2cbyte(i,j);
+      if(i==0) {
+        o2hex(driverdata[i][j]);
+        if(j%16==15) onl();
+        else         osp();
+        }
+      }
+    }
+  onl();
 
   pio_clear_instruction_memory(pio0);
   pio_clear_instruction_memory(pio1);
