@@ -96,3 +96,6 @@ The your using the old 10bit design with the period reduce by a quarter (
 0x86, 0x3f write ) to give 8 bits
 
 so in port init add the follow I2c write address 0x59 = 0x2A
+
+> You could try setting 0xB6 to 0x19, you may need to set 0x5D to 0x1 to get
+> the PWM frequency back up. 

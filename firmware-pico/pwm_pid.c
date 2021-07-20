@@ -104,6 +104,7 @@ case WAVE_PULSE:
   else p->pid_pv=pv;
 DEB_PID { o1ch('P'); o1hex(pn); ostr(": pv="); ostr(sfloat(p->pid_pv)); ostr(" sp="); ostr(sfloat(p->setpoint)); }
   err=p->pid_pv-p->setpoint;
+  if(err<0.01&&err>-0.01) err=0;                   // dead zone
   derr=(err-p->pid_perr)/(PWM_UPDATE/1000.0);      // derivative error
   p->pid_perr=err;
   p->pid_ierr+=err*(PWM_UPDATE/1000.0);            // integral error

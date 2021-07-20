@@ -3,7 +3,9 @@
 // port 1 ; set square 0 1 2 0
 // port 1 ; set pulse 0.2 .03 2 0
 // example for position PID:
-// port 1 ; pid 1 3 0 s2 0.0027777778 1 15 0 .1 3
+// plimit .6
+// bias .5
+// pid 0 3 0 s2 0.0027777778 1 5 0 .1 3
 // set square 0 .3 5 0
 // set triangle 0 .3 .5 0
 // (non-working) example for speed PID:
