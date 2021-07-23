@@ -61,6 +61,7 @@ static void cmd_help() {
   ostrnl("                       | sine     <min> <max> <period> <phase>");
   ostrnl("                       | triangle <min> <max> <period> <phase>");
   ostrnl("                       | pulse    <during> <after> <length> 0");
+  ostrnl("                       | ramp     <from> <to> <duration> 0");
   ostrnl("  <limit>              : 0..1 as fraction of maximum PWM drive");
   ostrnl("  <bias>               : 0..1 set biased motor drive mapping");
   ostrnl("                         (0,+1] offset by +bias");
@@ -141,6 +142,7 @@ static int cmd_set()  {
   if(strmatch("sine"))     return cmd_set_wave(WAVE_SINE);
   if(strmatch("triangle")) return cmd_set_wave(WAVE_TRI);
   if(strmatch("pulse"))    return cmd_set_wave(WAVE_PULSE);
+  if(strmatch("ramp"))     return cmd_set_wave(WAVE_RAMP);
   if(!parsefloat(&u)) return 1;
   cmd_set_const(u);
   return 0;

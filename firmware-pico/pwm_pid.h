@@ -6,5 +6,6 @@
 #define WAVE_SINE 1
 #define WAVE_TRI 2
 #define WAVE_PULSE 3
+#define WAVE_RAMP 4
 
 extern void proc_pwm(int pn);

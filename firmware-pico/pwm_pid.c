@@ -53,12 +53,15 @@ void proc_pwm(int pn) {
   u=p->spwavephaseacc+(PWM_UPDATE/1000.0);
   if(u>=p->spwaveperiod) {
     u-=p->spwaveperiod;
-    if(p->spwaveshape==WAVE_PULSE) {               // end of a pulse?
+    if(p->spwaveshape==WAVE_PULSE||
+       p->spwaveshape==WAVE_RAMP)  {               // end of a pulse/ramp?
+      o1ch('P'); o1hex(pn);
+      if(p->spwaveshape==WAVE_PULSE) ostrnl(": pulse done");
+      else                           ostrnl(": ramp done");
       p->spwaveshape =WAVE_SQUARE;                 // return to constant level
       p->spwavemin   =p->spwavemax;
       p->spwaveperiod=1;
       p->spwavephase =0;
-      o1ch('P'); o1hex(pn); ostrnl(": pulse done");
       }
     }
   if(u>=p->spwaveperiod) u=0;
@@ -82,6 +85,9 @@ case WAVE_TRI:
     break;
 case WAVE_PULSE:
     u=p->spwavemin;
+    break;
+case WAVE_RAMP:
+    u=p->spwavemin+(p->spwavemax-p->spwavemin)*u;
     break;
     }
   p->setpoint=u;
