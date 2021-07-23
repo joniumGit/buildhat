@@ -5,6 +5,7 @@
 #include "../micro-ecc/uECC.h"
 #include "../sha2/sha2.h"
 #include "key.public.h"
+// #include "key.public.dp.202107211610.h"
 
 #define BLVERSION "BuildHAT bootloader version 1.0"
 

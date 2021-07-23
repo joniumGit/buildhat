@@ -2,16 +2,15 @@
 // port 1 ; set sine 0 .1 1 0
 // port 1 ; set square 0 1 2 0
 // port 1 ; set pulse 0.2 .03 2 0
-// example for position PID:
-// plimit .6
-// bias .5
-// pid 0 3 0 s2 0.0027777778 1 5 0 .1 3
-// set square 0 .3 5 0
-// set triangle 0 .3 .5 0
 // (non-working) example for speed PID:
-// port 1 ; pid 1 1 0 s1 1 0 0.1 0 0 3
-// pid 0 1 0 s1 1 0 0.01 0 0 3 ; set 5
+// echo 1 ; debug 16 ; plimit .6 ; bias .4 ; pid 0 1 0 s1 1 0 0.003 0.01 0 300 ; set 50
 
+// example for position PID:
+// echo 1 ; combi 0 1 0 2 0 3 0
+// select 0
+// plimit .6 ; bias .4 ; pid 0 0 5 s2 0.0027777778 1 5 0 .1 3
+// set square 0 1 3 0
+// set triangle 0 1 15 0
 
 #include <string.h>
 #include "common.h"

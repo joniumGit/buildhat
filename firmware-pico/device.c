@@ -65,7 +65,7 @@ int device_varfrommode(int port,int mode,int offset,int format,float*var) {
   if(port<0||port>=NPORTS) return 0;
   dvp=devinfo+port;
   if(dvp->modedatalen[mode]==0) return 0;
-  for(i=0;i<(format&0x0f);i++) buf[i]=dvp->modedata[mode][offset+i];
+  for(i=0;i<(format&0x0f);i++) buf[i]=dvp->modedata[mode][offset+i]; // so that the value is aligned
   switch(format) {
 case 0x001: v=(float)*(unsigned char* )buf; break;
 case 0x101: v=(float)*(  signed char* )buf; break;
