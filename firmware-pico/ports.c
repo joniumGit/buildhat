@@ -135,8 +135,10 @@ void port_initdriver(int p) {
   port_setreg(p,0x9D,0x0E); // set 2-bit LUT2 Logic to OR
   port_setreg(p,0x19,0x7A); // connection 2-bit LUT2 IN1 to I2C OUT7  Connection 2-bit LUT2 IN0 to PWM0 OUT+
   port_setreg(p,0x1A,0x06); //
-  port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
-  port_setreg(p,0x0C,0x03); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x09,0x43); // ? connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x0C,0x43); // ? connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x0A,0x6E); // ?
+  port_setreg(p,0x0D,0x6E); // ?
   port_setreg(p,0x3C,0x16); // connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
   port_setreg(p,0xB6,0x09); // set PWM0 to flex-Div clock
   port_setreg(p,0x4C,0x70); // clear fault flags
