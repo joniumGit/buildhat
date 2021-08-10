@@ -17,6 +17,12 @@ void device_dump(int dn) {
   struct devinfo*d=devinfo+dn;
   int i,j;
   ostr("P"); o1hex(dn); ostr(": ");
+  if(d->connected&&d->id>0&&d->id<12) {
+    ostr("passive device type ");
+    odec(d->id);
+    onl();
+    return;
+    }
   if(d->type==-1) {
     ostrnl("no device detected");
     return;
