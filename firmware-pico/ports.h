@@ -22,6 +22,7 @@ extern struct portinfo {
   int selmodeonce;                                 // in "once only" mode for reporting data?
 
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled
+  int coast;                                       // 1=coasting
   int lastpwm;                                     // integer value to which PWM was last set
   int bias;                                        // bias offset Q16
   float setpoint;                                  // PID/direct PWM setpoint

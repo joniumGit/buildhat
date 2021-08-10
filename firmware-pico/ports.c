@@ -74,14 +74,14 @@ static void port_set_pwm_int(int pn,int pwm) {
   int lpwm=q->lastpwm;
   if(pwm==lpwm) return;
   q->lastpwm=pwm;
-  if(pwm==0) {
-    port_set_pwmflags(pn,0x6f); // disable PWM
-    port_set_pwmamount(pn,1); // minimum amount
-    return;
-    }
+//  if(pwm==0) {
+//    port_set_pwmflags(pn,0x6f); // disable PWM
+//    port_set_pwmamount(pn,1); // minimum amount
+//    return;
+//    }
   if(ABS(lpwm)>ABS(pwm)) port_set_pwmamount(pn,ABS(pwm)); // amount reducing in absolute terms? then set it first
-  if(pwm< 0&&lpwm>=0) port_set_pwmflags(pn,0x5f); // enable, -ve direction
-  if(pwm>=0&&lpwm<=0) port_set_pwmflags(pn,0x7f); // enable, +ve direction
+  if((pwm< 0&&lpwm>=0)||lpwm==0x7fffffff) port_set_pwmflags(pn,0x5f); // enable, -ve direction
+  if((pwm>=0&&lpwm<=0)||lpwm==0x7fffffff) port_set_pwmflags(pn,0x7f); // enable, +ve direction
   if(ABS(lpwm)<=ABS(pwm)) port_set_pwmamount(pn,ABS(pwm)); // amount increasing in absolute terms? then set it last
   }
 
@@ -101,7 +101,9 @@ void port_set_pwm(int p,float pwm) {
   }
 
 void port_motor_coast(int pn) {
-// !!!
+  port_set_pwmflags(pn,0x6f); // disable PWM
+  port_set_pwmamount(pn,1); // minimum amount
+  portinfo[pn].lastpwm=0x7fffffff;
   }
 
 void port_initpwm() {

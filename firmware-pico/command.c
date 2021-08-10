@@ -23,6 +23,7 @@ static void cmd_help() {
   ostrnl("  port <port>          : select a port (default 0)");
   ostrnl("  list                 : list connected devices");
   ostrnl("  vin                  : report main power input voltage");
+  ostrnl("  coast                : disable motor driver");
   ostrnl("  pwm                  : set current port to direct PWM mode (default)");
   ostrnl("  off                  : same as pwm ; set 0");
   ostrnl("  on                   : same as pwm ; set 1");
@@ -96,9 +97,14 @@ static int cmd_list()  {
   for(i=0;i<NPORTS;i++) device_dump(i);
   return 0;
   }
+static int cmd_coast()  {
+  portinfo[cmdport].coast=1;
+  return 0;
+  }
 static int cmd_pwm()  {
   portinfo[cmdport].setpoint=0;
   portinfo[cmdport].pwmmode=0;
+  portinfo[cmdport].coast=0;
   return 0;
   }
 static int cmd_pid()  {
@@ -116,10 +122,12 @@ static int cmd_pid()  {
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kd=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].windup=v;
   portinfo[cmdport].pwmmode=1;                     // enable PID controller and trigger messages from device providing process variable
+  portinfo[cmdport].coast=0;
 //  device_sendselect(portinfo[cmdport].pvport,portinfo[cmdport].pvmode);
   return 0;
 err:
   portinfo[cmdport].pwmmode=0;
+  portinfo[cmdport].coast=0;
   return 1;
   }
 static void cmd_set_const(float u) {
@@ -128,6 +136,7 @@ static void cmd_set_const(float u) {
   portinfo[cmdport].spwavemax   =u;
   portinfo[cmdport].spwaveperiod=1;
   portinfo[cmdport].spwavephase =0;
+  portinfo[cmdport].coast=0;
   }
 static int cmd_set_wave(int shape) {
   float min,max,period,phase;
@@ -143,6 +152,7 @@ static int cmd_set_wave(int shape) {
   portinfo[cmdport].spwaveperiod  =period;
   portinfo[cmdport].spwavephase   =phase;
   portinfo[cmdport].spwavephaseacc=0;
+  portinfo[cmdport].coast=0;
   return 0;
   }
 static int cmd_set()  {
@@ -277,6 +287,7 @@ void proc_cmd() {
     else if(strmatch("port"      )) { if(cmd_port())       goto err; }
     else if(strmatch("list"      )) { if(cmd_list())       goto err; }
     else if(strmatch("pwm"       )) { if(cmd_pwm())        goto err; }
+    else if(strmatch("coast"     )) { if(cmd_coast())      goto err; }
 //!!!    else if(strmatch("pwmfreq")) { if(cmd_pwmfreq()) goto err; }
     else if(strmatch("pid"       )) { if(cmd_pid())        goto err; }
     else if(strmatch("set"       )) { if(cmd_set())        goto err; }

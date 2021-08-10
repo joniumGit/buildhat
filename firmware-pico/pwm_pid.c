@@ -93,6 +93,10 @@ case WAVE_RAMP:
   p->setpoint=u;
   if(!d->connected) return;
 
+  if(p->coast!=0) {                                // coasting?
+    port_motor_coast(pn);
+    return;
+    }
   if(p->pwmmode==0) {                              // direct PWM?
     port_set_pwm(pn,p->setpoint);
     return;
