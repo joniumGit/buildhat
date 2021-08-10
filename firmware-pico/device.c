@@ -18,7 +18,7 @@ void device_dump(int dn) {
   int i,j;
   ostr("P"); o1hex(dn); ostr(": ");
   if(d->connected&&d->id>0&&d->id<12) {
-    ostr("passive device type ");
+    ostr("connected to passive ID ");
     odec(d->id);
     onl();
     return;
@@ -27,6 +27,7 @@ void device_dump(int dn) {
     ostrnl("no device detected");
     return;
     }
+  ostr("connected to active ID "); o2hex(d->type); onl();
   ostr("type "); o2hex(d->type); onl();
   ostr("  nmodes ="); odec(d->nmodes ); onl();
   ostr("  nview  ="); odec(d->nview  ); onl();

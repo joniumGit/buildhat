@@ -268,7 +268,7 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         timers[i][1]=0;
         timers[i][3]=0;
         portinfo[i].selmode=-1;
-        o1ch('P'); o1hex(i); ostr(": connected to active ID "); o2hex(d->type); onl();
+        o1ch('P'); o1hex(i); ostr(": established serial communication with active ID "); o2hex(d->type); onl();
         d->connected=1;
         state[i]=200;
         break;
