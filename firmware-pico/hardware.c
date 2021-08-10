@@ -11,3 +11,8 @@ struct porthw porthw[NPORTS]={
 
 #define ACCEL_I2C i2c0
 #define ACCEL_ADD 0x6a
+
+void leds_set(int d) {
+  gpio_put(PIN_LED0, d    &1);
+  gpio_put(PIN_LED1,(d>>1)&1);
+  }

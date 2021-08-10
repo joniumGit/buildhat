@@ -19,7 +19,11 @@ unsigned int gettick() {
   uint64_t t;
   t=time_us_64();
   if(t>time0) {
-    adc_vin=adc_hw->result*57/10*3300/4096;  // in mV
+    adc_vin=adc_hw->result*57/10*3300/4096;              // in mV
+    if     (adc_vin<VIN_THRESH0) leds_set(0);
+    else if(adc_vin<VIN_THRESH1) leds_set(3);            // orange
+    else if(adc_vin<VIN_THRESH2) leds_set(2);            // green
+    else                         leds_set(1);            // red
     adc_hw->cs|=4; // trigger another conversion
     while(t>time0) {
       time0+=1000;
