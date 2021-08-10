@@ -2,6 +2,7 @@
 #include "timer.h"
 #include "ioconv.h"
 #include "control.h"
+#include "ports.h"
 #include "../micro-ecc/uECC.h"
 #include "../sha2/sha2.h"
 #include "key.public.h"
@@ -193,6 +194,7 @@ done:
 int main() {
   init_timer();
   init_control();
+  init_ports();
   curve=uECC_secp256r1();
   for(;;)
     proc_ctrl();

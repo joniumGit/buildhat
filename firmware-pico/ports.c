@@ -123,8 +123,7 @@ unsigned int port_state56(int p) {
   }
 
 void port_resetdriver(int p) {
-  UC t[2]={0xf5,0x01};
-  port_i2c_write(p,t,2,0);
+  port_setreg(p,0xf5,0x01);
   }
 
 void port_initdriver(int p) {
