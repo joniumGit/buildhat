@@ -10,6 +10,7 @@
 #include "debug.h"
 #include "ioconv.h"
 #include "control.h"
+#include "version.h"
 //#include "hardware/resets.h"
 
 extern void reboot();
@@ -41,6 +42,7 @@ static void cmd_help() {
   ostrnl("  write2 <hexbyte>*    : send message with 2-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  echo <0|1>           : enable/disable echo and prompt on command port");
   ostrnl("  debug <debugcode>    : enable debugging output");
+  ostrnl("  version              : print version string");
   ostrnl("  signature            : dump firmware signature");
 //  ostrnl("  bootloader           : reset into bootloader");
   ostrnl("");
@@ -246,7 +248,11 @@ static int cmd_write(int nh) {   // nh=number of header bytes, 1 or 2
 err:
   return 1;
   }
-static int cmd_signature() {
+static void cmd_version() {
+  ostr("Firmware version: ");
+  ostrnl(FWVERSION);
+  }
+static void cmd_signature() {
   int i;
   ostr("Firmware signature:");
   for(i=0;i<64;i++) {
@@ -254,7 +260,6 @@ static int cmd_signature() {
     o2hex(bootloader_pad[i]);
     }
   onl();
-  return 0;
   }
 
 void cmd_prompt() {
@@ -287,6 +292,7 @@ void proc_cmd() {
     else if(strmatch("write2"    )) { if(cmd_write(2))     goto err; }
     else if(strmatch("echo"      )) { if(cmd_echo())       goto err; }
     else if(strmatch("debug"     )) { if(cmd_debug())      goto err; }
+    else if(strmatch("version"   )) cmd_version();
     else if(strmatch("signature" )) cmd_signature();
 //    else if(strmatch("bootloader")) cmd_bootloader();
     else goto err;
