@@ -26,6 +26,12 @@
 
 // =============================== MAIN STATE MACHINE ==========================
 
+// global timers
+// gtimer 0: PORTFAULT reporting
+// gtimer 1: MOTORFAULT reporting
+#define NGTIMERS 2
+
+// per-port timers
 // timer 0: NACK timing during data phase
 // timer 1: watchdog during setup and data phases
 // timer 2: PID update
@@ -42,6 +48,7 @@ void go() {
   int state[NPORTS];
   int delay[NPORTS];
   int timers[NPORTS][NTIMERS];
+  int gtimers[NTIMERS];
   int counters[NPORTS][NCOUNTERS];
   unsigned int t0,deltat;
   for(i=0;i<NPORTS;i++) {
@@ -51,6 +58,7 @@ void go() {
     port_uartoff(i);
     }
   memset(timers,0,sizeof(timers));
+  memset(gtimers,0,sizeof(gtimers));
   memset(counters,0,sizeof(counters));
   t0=gettick();
   for(;;) {
@@ -59,6 +67,25 @@ void go() {
       ostr("deltat="); o8hex(deltat); onl();
       }
     t0+=deltat;
+
+// GLOBAL PROCESSING
+
+    for(j=0;j<NGTIMERS;j++) gtimers[j]+=deltat;
+    if(gpio_get(PIN_PORTFAULT)!=0) gtimers[0]=0;
+    if(gtimers[0]>10&&gtimers[0]<1000) gtimers[0]=2000;  // avoid 10ms glitches; trigger message immediately then at 1Hz
+    if(gtimers[0]>=2000) {
+      ostrnl("Port power fault");
+      gtimers[0]-=1000;
+      }
+    if(gpio_get(PIN_MOTORFAULT)!=0) gtimers[1]=0;
+    if(gtimers[1]>10&&gtimers[1]<1000) gtimers[1]=2000;  // avoid 10ms glitches; trigger message immediately then at 1Hz
+    if(gtimers[1]>=2000) {
+//!!! disable this message for now      ostrnl("Motor power fault");
+      gtimers[1]-=1000;
+      }
+
+// PER-PORT PROCESSING
+
     for(i=0;i<NPORTS;i++) {
       struct devinfo*d=devinfo+i;
       struct porthw*p=porthw+i;
