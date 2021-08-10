@@ -1,9 +1,9 @@
 #pragma once
 
-#define BLVERSION "BuildHAT bootloader version 1.0"
-
 typedef unsigned char UC;
 typedef unsigned int UI;
+
+#define bootloader_pad ((volatile UC*)0x2003ff00)          // the last 256 bytes of main RAM are used to communication from bootloader to firmware
 
 #define CLAMP(u,min,max) \
   if(u<(min)) u=(min); \

@@ -4,6 +4,8 @@ pico-sdk/src/rp2_common/pico_standard_link/memmap_default.ld
 to move used area of RAM up to near stack so that it is not corrupted when
 the image is loaded. The maximum loaded image size with this linker script
 is 240K.
+An area of 256 bytes is also reserved at the top of the main 256k memory
+area for bootloader -> firmware communication.
 */
 /* Based on GCC ARM embedded samples.
    Defines the following symbols for use by code:
@@ -31,7 +33,7 @@ is 240K.
 MEMORY
 {
     FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 2048k
-    RAM(rwx) : ORIGIN =  0x2003c000, LENGTH = 16k     /* <--- changed here */
+    RAM(rwx) : ORIGIN =  0x2003c000, LENGTH = 0x3f00     /* <--- changed here */
     SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k
     SCRATCH_Y(rwx) : ORIGIN = 0x20041000, LENGTH = 4k
 }

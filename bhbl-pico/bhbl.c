@@ -10,6 +10,7 @@
 #define BLVERSION "BuildHAT bootloader version 1.0"
 
 extern void reboot();
+#define pad ((volatile UC*)0x2003ff00)           // the last 256 bytes of main RAM are used to communication from bootloader to firmware
 
 #define TIMEOUT 1000                             // in milliseconds
 static unsigned int tick0;
@@ -133,6 +134,7 @@ static int cmd_signature() {
     }
   if(read_image(signature,sizeof(signature))) return 1;
   ostrnl("\r\nSignature received");
+  memcpy((UC*)pad,signature,sizeof(signature));
   return 0;
   }
 
