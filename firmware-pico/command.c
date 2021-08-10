@@ -20,6 +20,7 @@ static void cmd_help() {
   ostrnl("Commands available:");
   ostrnl("  help, ?              : display this text");
   ostrnl("  port <port>          : select a port (default 0)");
+  ostrnl("  list                 : list connected devices");
   ostrnl("  vin                  : report main power input voltage");
   ostrnl("  pwm                  : set current port to direct PWM mode (default)");
   ostrnl("  off                  : same as pwm ; set 0");
@@ -85,6 +86,11 @@ static int cmd_port() {
   if(!parseuint(&u)) return 1;
   CLAMP(u,0,NPORTS-1);
   cmdport=u;
+  return 0;
+  }
+static int cmd_list()  {
+  int i;
+  for(i=0;i<NPORTS;i++) device_dump(i);
   return 0;
   }
 static int cmd_pwm()  {
@@ -253,6 +259,7 @@ void proc_cmd() {
     else if(strmatch("help"      )) cmd_help();
     else if(strmatch("?"         )) cmd_help();
     else if(strmatch("port"      )) { if(cmd_port())       goto err; }
+    else if(strmatch("list"      )) { if(cmd_list())       goto err; }
     else if(strmatch("pwm"       )) { if(cmd_pwm())        goto err; }
 //!!!    else if(strmatch("pwmfreq")) { if(cmd_pwmfreq()) goto err; }
     else if(strmatch("pid"       )) { if(cmd_pid())        goto err; }

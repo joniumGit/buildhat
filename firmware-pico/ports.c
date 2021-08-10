@@ -100,8 +100,8 @@ void port_set_pwm(int p,float pwm) {
   port_set_pwm_int(p,u);
   }
 
-void port_motor_brake(int pn) {
-//!!!
+void port_motor_coast(int pn) {
+// !!!
   }
 
 void port_initpwm() {
