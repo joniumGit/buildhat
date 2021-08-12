@@ -23,6 +23,7 @@ static void cmd_help() {
   ostrnl("  port <port>          : select a port (default 0)");
   ostrnl("  list                 : list connected devices");
   ostrnl("  vin                  : report main power input voltage");
+  ostrnl("  ledmode <ledmode>    : set LED function");
   ostrnl("  coast                : disable motor driver");
   ostrnl("  pwm                  : set current port to direct PWM mode (default)");
   ostrnl("  off                  : same as pwm ; set 0");
@@ -49,6 +50,7 @@ static void cmd_help() {
   ostrnl("");
   ostrnl("Where:");
   ostr  ("  <port>               : 0.."); odec(NPORTS-1); onl();
+  ostrnl("  <ledmode>            : 0=off 1=orange 2=green 3=orange+green –1=monitor Vin (default)");
   ostrnl("  <setpoint>           : –1..+1 for direct PWM; unrestricted for PID control");
   ostrnl("  <pidparams>          : <pvport> <pvmode> <pvoffset> <pvformat> <pvscale> <pvunwrap> <Kp> <Ki> <Kd> <windup>");
   ostrnl("    <pvport>           : port to fetch process variable from");
@@ -90,6 +92,13 @@ static int cmd_port() {
   if(!parseuint(&u)) return 1;
   CLAMP(u,0,NPORTS-1);
   cmdport=u;
+  return 0;
+  }
+static int cmd_ledmode() {
+  int u;
+  if(!parseint(&u)) return 1;
+  CLAMP(u,-1,3);
+  ledmode=u;
   return 0;
   }
 static int cmd_list()  {
@@ -286,6 +295,7 @@ void proc_cmd() {
     else if(strmatch("?"         )) cmd_help();
     else if(strmatch("port"      )) { if(cmd_port())       goto err; }
     else if(strmatch("list"      )) { if(cmd_list())       goto err; }
+    else if(strmatch("ledmode"   )) { if(cmd_ledmode())    goto err; }
     else if(strmatch("pwm"       )) { if(cmd_pwm())        goto err; }
     else if(strmatch("coast"     )) { if(cmd_coast())      goto err; }
 //!!!    else if(strmatch("pwmfreq")) { if(cmd_pwmfreq()) goto err; }
