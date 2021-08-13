@@ -26,6 +26,10 @@ extern struct porthw {
 #define PORT_INTE_RXMASK 0x0f
 #define PORT_INTE_TXMASK 0xf0
 
+// ACCELEROMETER
+#define ACCEL_I2C i2c0
+#define ACCEL_I2C_ADD 0x6a
+
 // control UART
 #define UART_C uart0
 #define UART_C_TXPIN 0

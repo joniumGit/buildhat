@@ -80,7 +80,7 @@ void go() {
     if(gpio_get(PIN_MOTORFAULT)!=0) gtimers[1]=0;
     if(gtimers[1]>10&&gtimers[1]<1000) gtimers[1]=2000;  // avoid 10ms glitches; trigger message immediately then at 1Hz
     if(gtimers[1]>=2000) {
-//!!! disable this message for now      ostrnl("Motor power fault");
+      ostrnl("Motor power fault");
       gtimers[1]-=1000;
       }
 
@@ -331,6 +331,7 @@ int main() {
   init_timer();
   init_control();
   init_ports();
+  init_accel();
 
   go();
 

@@ -54,53 +54,66 @@ static void i2c_reset(i2c_inst_t*i2c) {
   wait_ticks(10); // delay before retry
   }
 
-static int port_i2c_write(int p,const uint8_t*src,size_t len,bool nostop) {
+static int i2c_write(i2c_inst_t*i2c,int add,const uint8_t*src,size_t len,bool nostop) {
   int i,j,u;
   for(j=0;;j++) {   // three tries, then attempt a reset, then one more try
     for(i=0;i<3;i++) { // up to 3 tries the first time
-      u=i2c_write_timeout_us(porthw[p].i2c,porthw[p].i2c_add,src,len,nostop,10000); // allow 10ms timeout
+      u=i2c_write_timeout_us(i2c,add,src,len,nostop,10000); // allow 10ms timeout
       if(u==len) return u;
-      if(u==PICO_ERROR_GENERIC) { ostr("<P"); odec(p); ostrnl(": generic I²C bus error>"); }
-      if(u==PICO_ERROR_TIMEOUT) { ostr("<P"); odec(p); ostrnl(": I²C bus timeout>"      ); }
+      if(u==PICO_ERROR_GENERIC) { ostr("<generic I²C bus error>"); }
+      if(u==PICO_ERROR_TIMEOUT) { ostr("<I²C bus timeout>"      ); }
       if(j) return u; // give up and return an error code if we have already tried resetting
       wait_ticks(10); // delay before retry
       }
-    i2c_reset(porthw[p].i2c);
+    i2c_reset(i2c);
     }
   }
 
-static int port_i2c_read(int p,uint8_t*dst,size_t len,bool nostop) {
+static int i2c_read(i2c_inst_t*i2c,int add,uint8_t*dst,size_t len,bool nostop) {
   int i,j,u;
   for(j=0;;j++) {   // three tries, then attempt a reset, then one more try
     for(i=0;i<3;i++) { // up to 3 tries the first time
-      u=i2c_read_timeout_us (porthw[p].i2c,porthw[p].i2c_add,dst,len,nostop,10000); // allow 10ms timeout
+      u=i2c_read_timeout_us (i2c,add,dst,len,nostop,10000); // allow 10ms timeout
       if(u==len) return u;
-      if(u==PICO_ERROR_GENERIC) { ostr("<P"); odec(p); ostrnl(": generic I²C bus error>"); }
-      if(u==PICO_ERROR_TIMEOUT) { ostr("<P"); odec(p); ostrnl(": I²C bus timeout>"      ); }
+      if(u==PICO_ERROR_GENERIC) { ostr("<generic I²C bus error>"); }
+      if(u==PICO_ERROR_TIMEOUT) { ostr("<I²C bus timeout>"      ); }
       if(j) return u; // give up and return an error code if we have already tried resetting
       wait_ticks(10); // delay before retry
       }
-    i2c_reset(porthw[p].i2c);
+    i2c_reset(i2c);
     }
   }
 
 static int port_readi2cbyte(int p,int b) {
   UC t;
   t=b;
-  if(port_i2c_write(p,&t,1,0)==-2) return -1;
-  if(port_i2c_read (p,&t,1,0)==-2) return -1;
+  if(i2c_write(porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
+  if(i2c_read (porthw[p].i2c,porthw[p].i2c_add,&t,1,0)==-2) return -1;
   return t;
   }
 
 static inline void port_setreg(int p,int r,int d) {
   UC t[2]={r,d};
-  port_i2c_write(p,t,2,0);
+  i2c_write(porthw[p].i2c,porthw[p].i2c_add,t,2,0);
   }
 
 static inline void port_set2reg(int p,int r,int d0,int d1) {
   UC t[3]={r,d0,d1};
-  port_i2c_write(p,t,3,0);
+  i2c_write(porthw[p].i2c,porthw[p].i2c_add,t,3,0);
   }
+
+// ====================================== ACCELEROMETER =================================
+
+static void accel_setreg(int r,int d) {
+  UC t[2]={r,d};
+  i2c_write(ACCEL_I2C,ACCEL_I2C_ADD,t,2,0);
+  }
+
+void init_accel() {
+  accel_setreg(0x12,0x34); // make IRQ pin Open drain
+  }
+
+// ======================================= LPF2 PORTS ===================================
 
 static inline void port_set_pwmflags(int p,int f) {
   port_setreg(p,0x4C,f);
@@ -173,6 +186,9 @@ void port_initdriver(int p) {
   port_setreg(p,0x6B,0x00); // disable pull-ups/downs on GPIO5/6
 //  port_setreg(p,0x67,0x6A);
 //  port_setreg(p,0x68,0x15); // enable 10kΩ pull-ups and Schmitt triggers on SCL, SDA !!!
+  port_setreg(p,0x12,0x34); // enable open-drain mode for fault signal
+  port_setreg(p,0x97,0x01); // fault signal
+  port_setreg(p,0x98,0x00); // fault signal
   port_setreg(p,0x5C,0x20); // set PWM0 Period CLK to OSC1 Flex-Div
   port_setreg(p,0x5D,0x03); // set OSC1 Flex-Div to 4
   port_setreg(p,0x9D,0x0E); // set 2-bit LUT2 Logic to OR
@@ -290,6 +306,20 @@ void init_ports() {
   onl();
 
   for(i=0;i<NPORTS;i++) port_initdriver(i);
+
+  ostr("Reading driver dumps: after port_initdriver(): ");
+  for(i=0;i<NPORTS;i++) {
+    odec(i);
+    for(j=0;j<DRIVERBYTES;j++) {
+      driverdata[i][j]=port_readi2cbyte(i,j);
+//      if(i==0) {
+//        o2hex(driverdata[i][j]);
+//        if(j%16==15) onl();
+//        else         osp();
+//        }
+      }
+    }
+  onl();
 
   pio_clear_instruction_memory(pio0);
   pio_clear_instruction_memory(pio1);

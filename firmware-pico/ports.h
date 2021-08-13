@@ -66,6 +66,8 @@ extern unsigned int port_state56(int pn);
 extern void port_set_pwm(int pn,float pwm);
 extern void port_motor_coast(int pn);
 
+extern void int_accel();
+
 // ========================== LPF2 port UARTs and ISRs =========================
 
 extern void port_setbaud(int pn,int baud);
