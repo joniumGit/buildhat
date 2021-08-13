@@ -40,6 +40,7 @@ static void cmd_help() {
   ostrnl("  selonce <selmode>    : as 'select' but only report one data packet");
   ostrnl("  combi <index> <list> : configure a combi mode with a list of mode/dataset specifiers");
   ostrnl("  combi <index>        : de-configure a combi mode");
+  ostrnl("  accelerometer        : read accelerometer data once");
   ostrnl("  write1 <hexbyte>*    : send message with 1-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  write2 <hexbyte>*    : send message with 2-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  echo <0|1>           : enable/disable echo and prompt on command port");
@@ -267,6 +268,15 @@ static int cmd_write(int nh) {   // nh=number of header bytes, 1 or 2
 err:
   return 1;
   }
+static int cmd_accelerometer() {
+  int ax,ay,az;
+  accel_getaxyz(&ax,&ay,&az);
+  ostr("Accelerometer: ");
+  osfxp(ax,16,2); osp();
+  osfxp(ay,16,2); osp();
+  osfxp(az,16,2); onl();
+  return 0;
+  }
 static void cmd_version() {
   ostr("Firmware version: ");
   ostrnl(FWVERSION);
@@ -291,31 +301,32 @@ void proc_cmd() {
   for(;;) {
     skspsc();
     if(parse_eol()) goto done;
-    else if(strmatch("help"      )) cmd_help();
-    else if(strmatch("?"         )) cmd_help();
-    else if(strmatch("port"      )) { if(cmd_port())       goto err; }
-    else if(strmatch("list"      )) { if(cmd_list())       goto err; }
-    else if(strmatch("ledmode"   )) { if(cmd_ledmode())    goto err; }
-    else if(strmatch("pwm"       )) { if(cmd_pwm())        goto err; }
-    else if(strmatch("coast"     )) { if(cmd_coast())      goto err; }
-//!!!    else if(strmatch("pwmfreq")) { if(cmd_pwmfreq()) goto err; }
-    else if(strmatch("pid"       )) { if(cmd_pid())        goto err; }
-    else if(strmatch("set"       )) { if(cmd_set())        goto err; }
-    else if(strmatch("off"       )) { if(cmd_off())        goto err; }
-    else if(strmatch("on"        )) { if(cmd_on())         goto err; }
-    else if(strmatch("vin"       )) { if(cmd_vin())        goto err; }
-    else if(strmatch("bias"      )) { if(cmd_bias())       goto err; }
-    else if(strmatch("plimit"    )) { if(cmd_plimit())     goto err; }
-    else if(strmatch("select"    )) { if(cmd_select(0))    goto err; }
-    else if(strmatch("selonce"   )) { if(cmd_select(1))    goto err; }
-    else if(strmatch("combi"     )) { if(cmd_combi())      goto err; }
-    else if(strmatch("write1"    )) { if(cmd_write(1))     goto err; }
-    else if(strmatch("write2"    )) { if(cmd_write(2))     goto err; }
-    else if(strmatch("echo"      )) { if(cmd_echo())       goto err; }
-    else if(strmatch("debug"     )) { if(cmd_debug())      goto err; }
-    else if(strmatch("version"   )) cmd_version();
-    else if(strmatch("signature" )) cmd_signature();
-//    else if(strmatch("bootloader")) cmd_bootloader();
+    else if(strmatch("help"         )) cmd_help();
+    else if(strmatch("?"            )) cmd_help();
+    else if(strmatch("port"         )) { if(cmd_port())          goto err; }
+    else if(strmatch("list"         )) { if(cmd_list())          goto err; }
+    else if(strmatch("ledmode"      )) { if(cmd_ledmode())       goto err; }
+    else if(strmatch("pwm"          )) { if(cmd_pwm())           goto err; }
+    else if(strmatch("coast"        )) { if(cmd_coast())         goto err; }
+//!!!    else if(strmatch("pwmfreq" )) { if(cmd_pwmfreq())       goto err; }
+    else if(strmatch("pid"          )) { if(cmd_pid())           goto err; }
+    else if(strmatch("set"          )) { if(cmd_set())           goto err; }
+    else if(strmatch("off"          )) { if(cmd_off())           goto err; }
+    else if(strmatch("on"           )) { if(cmd_on())            goto err; }
+    else if(strmatch("vin"          )) { if(cmd_vin())           goto err; }
+    else if(strmatch("bias"         )) { if(cmd_bias())          goto err; }
+    else if(strmatch("plimit"       )) { if(cmd_plimit())        goto err; }
+    else if(strmatch("select"       )) { if(cmd_select(0))       goto err; }
+    else if(strmatch("selonce"      )) { if(cmd_select(1))       goto err; }
+    else if(strmatch("combi"        )) { if(cmd_combi())         goto err; }
+    else if(strmatch("accelerometer")) { if(cmd_accelerometer()) goto err; }
+    else if(strmatch("write1"       )) { if(cmd_write(1))        goto err; }
+    else if(strmatch("write2"       )) { if(cmd_write(2))        goto err; }
+    else if(strmatch("echo"         )) { if(cmd_echo())          goto err; }
+    else if(strmatch("debug"        )) { if(cmd_debug())         goto err; }
+    else if(strmatch("version"      )) cmd_version();
+    else if(strmatch("signature"    )) cmd_signature();
+//    else if(strmatch("bootloader" )) cmd_bootloader();
     else goto err;
     }
 err:
