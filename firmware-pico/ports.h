@@ -62,6 +62,7 @@ extern volatile int mqhead[NPORTS],mqtail[NPORTS]; // if head==tail then the que
 
 extern void port_initpwm();
 extern void init_ports();
+extern void port_clearfaults();
 extern unsigned int port_state56(int pn);
 extern void port_set_pwm(int pn,float pwm);
 extern void port_motor_coast(int pn);

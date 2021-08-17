@@ -199,6 +199,14 @@ void port_resetdriver(int p) {
   port_setreg(p,0xf5,0x01);
   }
 
+void port_clearfaults() {
+  int i;
+  for(i=0;i<NPORTS;i++) {
+    port_setreg(i,0x4C,0x70); // clear fault flags
+    port_setreg(i,0x4C,0x7F); // enable fault flags
+    }
+  }
+
 void port_initdriver(int p) {
   port_setreg(p,0x6A,0x00);
   port_setreg(p,0x6B,0x00); // disable pull-ups/downs on GPIO5/6

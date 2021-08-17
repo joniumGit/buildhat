@@ -5,6 +5,7 @@
 
 // example for position PID:
 // echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit .6 ; bias .4 ; pid 0 0 5 s2 0.0027777778 1 5 0 .1 3
+// echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit .6 ; bias .4 ; pid 0 0 1 s4 0.0027777778 0 5 0 .1 3
 // set square 0 1 3 0
 // set triangle 0 1 15 0
 // set ramp 0 1 10 0

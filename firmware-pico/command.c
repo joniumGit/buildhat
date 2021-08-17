@@ -24,6 +24,7 @@ static void cmd_help() {
   ostrnl("  list                 : list connected devices");
   ostrnl("  vin                  : report main power input voltage");
   ostrnl("  ledmode <ledmode>    : set LED function");
+  ostrnl("  clear_faults         : clear latched motor fault conditions");
   ostrnl("  coast                : disable motor driver");
   ostrnl("  pwm                  : set current port to direct PWM mode (default)");
   ostrnl("  off                  : same as pwm ; set 0");
@@ -303,6 +304,7 @@ void proc_cmd() {
     if(parse_eol()) goto done;
     else if(strmatch("help"         )) cmd_help();
     else if(strmatch("?"            )) cmd_help();
+    else if(strmatch("clear_faults" )) port_clearfaults();
     else if(strmatch("port"         )) { if(cmd_port())          goto err; }
     else if(strmatch("list"         )) { if(cmd_list())          goto err; }
     else if(strmatch("ledmode"      )) { if(cmd_ledmode())       goto err; }
