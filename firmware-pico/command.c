@@ -39,7 +39,7 @@ static void cmd_help() {
   ostrnl("  select               : stop outputting data");
   ostrnl("  selonce <selvar>     : as 'select' but only report one data packet");
   ostrnl("  selonce <selmode>    : as 'select' but only report one data packet");
-  ostrnl("  combi <index> <list> : configure a combi mode with a list of mode/dataset specifiers");
+  ostrnl("  combi <index> <clist>: configure a combi mode with a list of mode/dataset specifiers");
   ostrnl("  combi <index>        : de-configure a combi mode");
   ostrnl("  accelerometer        : read accelerometer data once");
   ostrnl("  write1 <hexbyte>*    : send message with 1-byte header; pads if necessary, sets payload length and checksum");
@@ -83,7 +83,7 @@ static void cmd_help() {
   ostrnl("                         u2=unsigned short; s2=signed short;");
   ostrnl("                         u4=unsigned int;   s4=signed int;");
   ostrnl("                         f4=float");
-  ostrnl("  <list>               : {<mode> <dataset>}*");
+  ostrnl("  <clist>              : {<mode> <dataset>}*");
   ostrnl("  <hexbyte>            : 1- or 2-digit hex value");
   ostrnl("  <debugcode>          : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
   ostrnl("                         8=DATA payload; 16=PID controller");

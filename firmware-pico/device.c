@@ -23,7 +23,7 @@ void device_dump(int dn) {
     onl();
     return;
     }
-  if(d->type==-1) {
+  if(!d->connected||d->type==-1) {
     ostrnl("no device detected");
     return;
     }
