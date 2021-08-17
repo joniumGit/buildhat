@@ -240,7 +240,6 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         state[i]++;
         break;
     case 101:                                      // we have received an ACK
-        device_dump(i);                            // dump device data and pause
         if(d->type<0) {                            // no TYPE information?
           state[i]=0;                              // reset and try again
           break;
@@ -269,8 +268,9 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         timers[i][1]=0;
         timers[i][3]=0;
         portinfo[i].selmode=-1;
-        o1ch('P'); o1hex(i); ostr(": established serial communication with active ID "); o2hex(d->type); onl();
         d->connected=1;
+        device_dump(i);                            // dump device data and pause
+        o1ch('P'); o1hex(i); ostr(": established serial communication with active ID "); o2hex(d->type); onl();
         state[i]=200;
         break;
 
