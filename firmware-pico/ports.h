@@ -68,7 +68,7 @@ extern void port_set_pwm(int pn,float pwm);
 extern void port_motor_coast(int pn);
 
 extern void init_accel();
-extern void accel_getaxyz(int*ax,int*ay,int*az);
+// extern void accel_getaxyz(int*ax,int*ay,int*az);
 
 // ========================== LPF2 port UARTs and ISRs =========================
 

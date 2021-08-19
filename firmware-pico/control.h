@@ -1,7 +1,7 @@
 #pragma once
 
-#define CTRLRXBLEN 4096                            // enough for 10ms of data at 3Mbaud
-#define CTRLTXBLEN 4096
+#define CTRLRXBLEN 8192                            // enough for 36ms of data at 3Mbaud
+#define CTRLTXBLEN 8192
 
 #define CMDBUFLEN 256
 

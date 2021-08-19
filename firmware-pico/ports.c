@@ -106,29 +106,29 @@ static inline void port_set2reg(int p,int r,int d0,int d1) {
 
 static void accel_setreg(int r,int d) {
   UC t[2]={r,d};
-  i2c_write(ACCEL_I2C,ACCEL_I2C_ADD,t,2,0);
+  i2c_write_timeout_us(ACCEL_I2C,ACCEL_I2C_ADD,t,2,0,10000); // allow 10ms timeout
   }
 
-static void accel_read(int r,UC*b,int n) {
-  UC t[1]={r};
-  i2c_write(ACCEL_I2C,ACCEL_I2C_ADD,t,1,0);
-  i2c_read(ACCEL_I2C,ACCEL_I2C_ADD,b,n,0);
-  }
-
-// return XYZ accelerations in Q16 format
-void accel_getaxyz(int*ax,int*ay,int*az) {
-  UC t[6];
-  int a;
-  accel_read(0x28,t,6);
-  a=((int)(signed char)t[1]<<10)+((unsigned int)t[0]<<2); if(ax) *ax=a;
-  a=((int)(signed char)t[3]<<10)+((unsigned int)t[2]<<2); if(ay) *ay=a;
-  a=((int)(signed char)t[5]<<10)+((unsigned int)t[4]<<2); if(az) *az=a;
-  }
+// static void accel_read(int r,UC*b,int n) {
+//   UC t[1]={r};
+//   i2c_write(ACCEL_I2C,ACCEL_I2C_ADD,t,1,0);
+//   i2c_read(ACCEL_I2C,ACCEL_I2C_ADD,b,n,0);
+//   }
+// 
+// // return XYZ accelerations in Q16 format
+// void accel_getaxyz(int*ax,int*ay,int*az) {
+//   UC t[6];
+//   int a;
+//   accel_read(0x28,t,6);
+//   a=((int)(signed char)t[1]<<10)+((unsigned int)t[0]<<2); if(ax) *ax=a;
+//   a=((int)(signed char)t[3]<<10)+((unsigned int)t[2]<<2); if(ay) *ay=a;
+//   a=((int)(signed char)t[5]<<10)+((unsigned int)t[4]<<2); if(az) *az=a;
+//   }
 
 void init_accel() {
-  accel_setreg(0x10,0x60); // enable accelerometre
+  accel_setreg(0x10,0x60); // enable accelerometer
   accel_setreg(0x11,0x60); // enable gyroscope
-  accel_setreg(0x12,0x34); // make IRQ pin Open drain
+  accel_setreg(0x12,0x34); // make IRQ pin open drain
   }
 
 // ======================================= LPF2 PORTS ===================================
