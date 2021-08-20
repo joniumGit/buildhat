@@ -149,14 +149,18 @@ case 0x80:
       // !!! gets all sensor info
   default:
 unhandled:
-      o1ch('P'); o1hex(pn);
-      ostr(": type=80 cmd="); o2hex(m->cmd);
-      ostr("  payload="); o2hexdump(m->payload,m->plen); onl();
+DEB_UKM {
+        o1ch('P'); o1hex(pn);
+        ostr(": type=80 cmd="); o2hex(m->cmd);
+        ostr("  payload="); o2hexdump(m->payload,m->plen); onl();
+        }
       break;
       }
     break;
 default:
-    o1ch('P'); o1hex(pn); ostr(" message type="); o2hex(m->type); onl();
+DEB_UKM {
+      o1ch('P'); o1hex(pn); ostr(" message type="); o2hex(m->type); onl();
+      }
     break;
     }
   mqtail[pn]=(mqtail[pn]+1)%MQLEN;
@@ -181,9 +185,11 @@ DEB_DPY {
     if(m->mode==portinfo[pn].selmode) portinfo[pn].selrxcount++;
     break;
 default:
-    o1ch('P'); o1hex(pn);
-    ostr(": data-phase message type ");o2hex(m->type);
-    ostr(" payload="); o2hexdump(m->payload,m->plen); onl();
+DEB_UKM {
+      o1ch('P'); o1hex(pn);
+      ostr(": data-phase message type ");o2hex(m->type);
+      ostr(" payload="); o2hexdump(m->payload,m->plen); onl();
+      }
     break;
     }
   mqtail[pn]=(mqtail[pn]+1)%MQLEN;

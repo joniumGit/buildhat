@@ -86,7 +86,7 @@ static void cmd_help() {
   ostrnl("  <clist>              : {<mode> <dataset>}*");
   ostrnl("  <hexbyte>            : 1- or 2-digit hex value");
   ostrnl("  <debugcode>          : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
-  ostrnl("                         8=DATA payload; 16=PID controller");
+  ostrnl("                         8=DATA payload; 16=PID controller; 32=unknown messages");
   }
 
 static int cmd_port() {

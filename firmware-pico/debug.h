@@ -8,6 +8,7 @@ extern int debug;
 #define DEB_SIG if(debug&(1<<2))                   // signature debug
 #define DEB_DPY if(debug&(1<<3))                   // DATA payload debug
 #define DEB_PID if(debug&(1<<4))                   // PID controller debug
+#define DEB_UKM if(debug&(1<<5))                   // unknown messages debug
 
 extern void o1chs(int x);
 extern void ostrs(char*s);
