@@ -79,7 +79,7 @@ case 0x47:
     break;
 case 0x80:
     md=d->modes+m->mode;
-    switch(m->cmd) {
+    switch(m->cmd&0xdf) {                          // mask out extended mode bit
   case 0x00:
       memcpy(md->name,m->payload,m->plen);
       md->name[m->plen]=0;                         // ensure 0-termination
