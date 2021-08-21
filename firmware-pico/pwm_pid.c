@@ -91,7 +91,10 @@ case WAVE_RAMP:
     break;
     }
   p->setpoint=u;
-  if(!d->connected) return;
+  if(!d->connected) {
+    port_set_pwm(pn,0);
+    return;
+    }
 
   if(p->coast!=0) {                                // coasting?
     port_motor_coast(pn);

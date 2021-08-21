@@ -7,6 +7,7 @@
 #include "timer.h"
 #include "hardware.h"
 #include "ports.h"
+#include "pwm_pid.h"
 
 #include "hardware/adc.h"
 #include "hardware/clocks.h"
@@ -102,6 +103,16 @@ static inline void port_set2reg(int p,int r,int d0,int d1) {
   i2c_write(porthw[p].i2c,porthw[p].i2c_add,t,3,0);
   }
 
+void port_driverdump(int pn) {
+  int j;
+  for(j=0;j<DRIVERBYTES;j++) {
+    o2hex(port_readi2cbyte(pn,j));
+    if(j%16==15) onl();
+    else         osp();
+    }
+  onl();
+  }
+
 // ====================================== ACCELEROMETER =================================
 
 static void accel_setreg(int r,int d) {
@@ -179,12 +190,34 @@ void port_motor_coast(int pn) {
   portinfo[pn].lastpwm=0x7fffffff;
   }
 
-void port_initpwm() {
-  int i;
-  for(i=0;i<NPORTS;i++) {
-    portinfo[i].lastpwm=0x7fffffff; // dummy value
-    port_set_pwm_int(i,0);
-    }
+void port_initpwm(int pn) {
+  struct portinfo*q=portinfo+pn;
+  port_set_pwm_int(pn,0);
+  q->pwmmode=0;
+  q->coast=0;
+  q->lastpwm=0x7fffffff; // dummy value
+  q->bias=0;
+  q->setpoint=0;
+  q->spwaveshape=WAVE_SQUARE;
+  q->spwavemin=0;
+  q->spwavemax=0;
+  q->spwaveperiod=1;
+  q->spwavephase=0;
+  q->spwavephaseacc=0;
+  q->pid_pv=0;
+  q->pid_pv_last=0;
+  q->pid_ierr=0;
+  q->pid_perr=0;
+  q->pvport=0;
+  q->pvmode=0;
+  q->pvoffset=0;
+  q->pvformat=0;
+  q->pvscale=0;
+  q->pvunwrap=0;
+  q->Kp=0;
+  q->Ki=0;
+  q->Kd=0;
+  q->windup=0;
   }
 
 // GPIO5 -> b0, GPIO6 -> b1
@@ -220,10 +253,10 @@ void port_initdriver(int p) {
   port_setreg(p,0x9D,0x0E); // set 2-bit LUT2 Logic to OR
   port_setreg(p,0x19,0x7A); // connection 2-bit LUT2 IN1 to I2C OUT7  Connection 2-bit LUT2 IN0 to PWM0 OUT+
   port_setreg(p,0x1A,0x06); //
-  port_setreg(p,0x09,0x43); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
-  port_setreg(p,0x0C,0x43); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
-  port_setreg(p,0x0A,0x6E); // enable slow decay mode
-  port_setreg(p,0x0D,0x6E); //
+  port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x0C,0x03); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x0A,0x60); // enable slow decay mode
+  port_setreg(p,0x0D,0x60); //
   port_setreg(p,0x3C,0x16); // connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
   port_setreg(p,0xB6,0x09); // set PWM0 to flex-Div clock
   port_setreg(p,0x4C,0x70); // clear fault flags
@@ -367,7 +400,7 @@ void init_ports() {
   irq_set_exclusive_handler(PIO1_IRQ_0,port2_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_1,port3_uart_irq);
 
-  port_initpwm();
+  for(i=0;i<NPORTS;i++) port_initpwm(i);
 //  // test for PWM glitches
 //  for(;;) {
 //    for(i=2;i<4;i++) {

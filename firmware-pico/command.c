@@ -46,6 +46,7 @@ static void cmd_help() {
   ostrnl("  write2 <hexbyte>*    : send message with 2-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  echo <0|1>           : enable/disable echo and prompt on command port");
   ostrnl("  debug <debugcode>    : enable debugging output");
+//  ostrnl("  driverdump <port>: dump driver data");
   ostrnl("  version              : print version string");
   ostrnl("  signature            : dump firmware signature");
 //  ostrnl("  bootloader           : reset into bootloader");
@@ -186,6 +187,13 @@ static int cmd_off()         { cmd_set_const(0.0); return 0; }
 static int cmd_vin()         { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
 static int cmd_echo()        { return !parseint(&echo); }
 static int cmd_debug()       { return !parseint(&debug); }
+//static int cmd_driverdump()  {
+//  int pn;
+//  if(!parseint(&pn)) return 1;
+//  CLAMP(pn,0,NPORTS-1);
+//  port_driverdump(pn);
+//  return 0;
+//  }
 static int cmd_plimit()      {
   float u;
   if(!parsefloat(&u)) return 1;
@@ -326,6 +334,7 @@ void proc_cmd() {
     else if(strmatch("write2"       )) { if(cmd_write(2))        goto err; }
     else if(strmatch("echo"         )) { if(cmd_echo())          goto err; }
     else if(strmatch("debug"        )) { if(cmd_debug())         goto err; }
+//    else if(strmatch("driverdump"   )) { if(cmd_driverdump())    goto err; }
     else if(strmatch("version"      )) cmd_version();
     else if(strmatch("signature"    )) cmd_signature();
 //    else if(strmatch("bootloader" )) cmd_bootloader();

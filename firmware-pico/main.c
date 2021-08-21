@@ -98,22 +98,12 @@ void go() {
         }
       if(delay[i]>0) continue;                     // skip processing while we are delaying
       delay[i]=0;
-      if(deltat) {
-//        o1hex(gpio_get(10));
-//        o1hex(gpio_get(24));
-//        o2hex(pio0->sm[0].addr); osp();
-//        o2hex(pio0->sm[1].addr); osp(); // osp();
-//        o2hex(pio0->sm[2].addr); osp();
-//        o2hex(pio0->sm[3].addr); osp(); // osp();
-//        o2hex(pio1->sm[0].addr); osp();
-//        o2hex(pio1->sm[1].addr); onl(); // osp();
-//        o2hex(pio1->sm[2].addr); osp();
-//        o2hex(pio1->sm[3].addr); onl();
-        }
-//!!!      if(i!=1) continue;
       switch(state[i]) {
     case 0:
         d->signature=0;
+        d->id=0;
+        d->connected=0;
+        port_initpwm(i);
         counters[i][0]=0;
         state[i]++;
     case 1:
@@ -333,21 +323,6 @@ int main() {
   init_control();
   init_ports();
   init_accel();
-
   go();
-
-//   test4();
-// 
-//   ostrnl("P for PWM test");
-//   ostrnl("G for ID test");
-// 
-//   for(;;) {
-//     switch(w1ch()) {
-//   case 'p': case 'P': test4(); break;
-//   case 'g': case 'G': go(); break;
-//       }
-//     }
-// 
-//   ostrnl("Done");
   return 0;
   }
