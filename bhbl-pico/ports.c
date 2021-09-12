@@ -109,8 +109,7 @@ void init_ports() {
   gpio_pull_up(PIN_I2C0_SCL);
   gpio_pull_up(PIN_I2C1_SDA);
   gpio_pull_up(PIN_I2C1_SCL);
-  gpio_put(PIN_LED1,1);
-  wait_ticks(100);
+  gpio_put(PIN_LED0,1); // light red LED
   gpio_put(PIN_LED1,0);
 //  for(;;) {
 //  ostrnl("Checking I²C0:");
