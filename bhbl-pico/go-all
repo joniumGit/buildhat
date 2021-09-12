@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+echo \#define BLVERSION \"`date +%s ; date -Iseconds`\" >version.h
 cd build
 cmake ..
 make

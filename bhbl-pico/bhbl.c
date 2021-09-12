@@ -5,10 +5,10 @@
 #include "ports.h"
 #include "../micro-ecc/uECC.h"
 #include "../sha2/sha2.h"
-#include "key.public.h"
-// #include "key.public.dp.202107211610.h"
+// #include "key.public.h"
+#include "key.public.dp.202107211610.h"
 
-#define BLVERSION "BuildHAT bootloader version 1.0"
+#include "version.h"
 
 extern void reboot();
 #define pad ((volatile UC*)0x2003ff00)           // the last 256 bytes of main RAM are used to communication from bootloader to firmware
