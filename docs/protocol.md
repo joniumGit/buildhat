@@ -3,7 +3,8 @@
 ## Introduction
 
 The BuildHAT is a board that provides an interface between a
-Raspberry Pi host and up to four LEGO LPF2 devices. Supported
+Raspberry Pi host and up to four LEGO LPF2 (LEGO Power Functions
+version 2) devices. Supported
 LPF2 devices include a wide range of actuators and sensors.
 Firmware running on the HAT deals with the hard real-time
 requirements of the LPF2 devices, including monitoring for
@@ -17,7 +18,8 @@ protocol is entirely in plain text, and it is perfectly possible to
 simply run a terminal emulator on the host and interact manually with
 the HAT. When experimenting the HAT in this way it is convenient to enable echo
 mode so that you can see what you are typing: see the description of the
-``echo`` command below. See also the ``plimit`` command.
+``echo`` command below. See also the ``plimit`` command, which must
+be sent before many operations will work correctly.
 
 This document describes the commands available over that interface.
 Note that a Python library is provided that provides a higher-level
@@ -141,7 +143,7 @@ Sets the behaviour of the HAT's LEDs.
 
 ### ``list``
 
-Prints a list of all the information known about LPF2 devices connected to the HAT.
+Prints a list of all the information known about the LPF2 devices connected to the HAT.
 
 ### ``clear_faults``
 
@@ -182,6 +184,31 @@ itself. They are, in order, as follows.
 | ``Kd``       | differential gain |
 | ``windup``   | integral windup limit |
 
+The PID controller fetches the process variable from the mode specified
+by the ``pvport``, ``pvmode``, ``pvoffset``, ``pvformat`` parameters. Note
+that a suitable ``select`` command is required to ensure that this mode's
+data are available.
+
+It then multiplies the value from the mode by ``pvscale``.
+
+The ``pvunwrap`` parameter allows
+'phase unwrapping' of the process variable. The commonest use of this
+is with an angular sensor that outputs a value from –180° to +179°
+depending on its absolute position. When the sensor is turned continuously,
+the reading will jump from +179° to –180° once per revolution. Setting
+the ``pvunwrap`` parameter to 360 will cause the unwrapper to add or subtract 360° at each
+discontinuity to make its output continuous (and in principle infinite
+in range). More precisely, the output of the unwrapper is guaranteed equal to
+its input modulo the ``pvunwrap`` parameter, with the smallest possible
+change between one sample and the next.
+
+``Kp``, ``Ki`` and ``Kd`` are the standard PID controller parameters.
+The implied unit of time in the integrator and differentiator is one
+second.
+
+The output of the error integrator is clamped in absolute value to
+the ``windup`` parameter.
+
 ### ``set <setpoint>``
 
 Configures the setpoint for the controller on the current port. The
@@ -199,15 +226,20 @@ ramp waveform the first three parameters are the setpoint value at the
 start of the ramp, the setpoint value at the end of the ramp, and the
 duration of the ramp; the fourth parameter is again ignored.
 
+When a pulse or ramp is completed, a message ``pulse done`` or ``ramp done``
+is emitted.
+
 ### ``bias <bias>``
 
 Sets a bias value for the current port which is added to positive motor
-drive values and subtracted from negative motor drive values.
+drive values and subtracted from negative motor drive values. This can
+be used to compensate for the fact that most DC motors require a certain
+amount of drive before they will turn at all.
 
 ### ``plimit <limit>``
 
 Sets a global limit to the motor drive power on all ports. For safety
-the default value is 0.1; this will usually need to be increased.
+when experimenting the default value is 0.1; this will usually need to be increased.
 
 ### ``select``
 
@@ -261,7 +293,24 @@ output faster than the serial port can handle at its standard speed.
 
 Not required for normal use.
 
-# TODO
+## Examples
+
+The following are some simple examples to illustrate how to use the above commands.
+
+### Using a motor from the SPIKE Prime set
+
+Plug the motor into port 0. Then send
+
+``port 0 ; plimit 1 ; set triangle 0 1 10 0``
+
+The motor will accelerate to full speed and back to zero continuously with a period of ten seconds.
+
+``port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; bias .4 ; pid 0 0 5 s2 0.0027777778 1 5 0 .1 3 ; set square 0 1 3 0``
+
+The motor will alternately rotate one revolution clockwise and one revolution
+anticlockwise with a period of three seconds.
+
+## TODO
 
 - expand list command details
 - list passive and active ID codes?
