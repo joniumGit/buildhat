@@ -310,9 +310,29 @@ The motor will accelerate to full speed and back to zero continuously with a per
 The motor will alternately rotate one revolution clockwise and one revolution
 anticlockwise with a period of three seconds.
 
+## Passive ID codes
+
+| ID (decimal) | Device |
+| --- | --- |
+|  1 | System medium motor |
+|  2 | System train motor |
+|  3 | System turntable motor |
+|  4 | general PWM/third party |
+|  5 | button/touch sensor |
+|  6 | Technic large motor |
+|  7 | Technic XL motor (but note that some have active ID) |
+|  8 | simple lights |
+|  9 | Future lights 1 |
+| 10 | Future lights 2 |
+| 11 | System future actuator (train points) |
+
+## Active ID codes
+| ID (hex) | Device |
+| --- | --- |
+|  1 | System medium motor |
+
 ## TODO
 
 - expand list command details
-- list passive and active ID codes?
 - give all reverse-engineered info about how to use devices?
-- examples?
+- improve examples
