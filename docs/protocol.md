@@ -144,6 +144,71 @@ Sets the behaviour of the HAT's LEDs.
 ### ``list``
 
 Prints a list of all the information known about the LPF2 devices connected to the HAT.
+Typical output is as follows.
+
+    P0: connected to active ID 40
+    type 40
+      nmodes =3
+      nview  =3
+      baud   =115200
+      hwver  =00000004
+      swver  =11000000
+      M0 LEV O SI = PCT
+        format count=1 type=0 chars=1 dp=0
+        RAW: 00000000 00000009    PCT: 00000000 00000064    SI: 00000000 00000009
+      M1 COL O SI = PCT
+        format count=1 type=0 chars=2 dp=0
+        RAW: 00000000 0000000A    PCT: 00000000 00000064    SI: 00000000 0000000A
+      M2 PIX O SI =
+        format count=9 type=0 chars=3 dp=0
+        RAW: 00000000 000000AA    PCT: 00000000 00000064    SI: 00000000 000000AA
+      M3 TRANS SI =
+        format count=1 type=0 chars=1 dp=0
+        RAW: 00000000 00000002    PCT: 00000000 00000064    SI: 00000000 00000002
+         speed PID: 00000000 00000000 00000000 00000000
+      position PID: 00000000 00000000 00000000 00000000
+    P1: no device detected
+    P2: connected to passive ID 8
+    P3: connected to active ID 30
+    type 30
+      nmodes =5
+      nview  =3
+      baud   =115200
+      hwver  =00000004
+      swver  =10000000
+      M0 POWER SI = PCT
+        format count=1 type=0 chars=4 dp=0
+        RAW: 00000000 00000064    PCT: 00000000 00000064    SI: 00000000 00000064
+      M1 SPEED SI = PCT
+        format count=1 type=0 chars=4 dp=0
+        RAW: 00000000 00000064    PCT: 00000000 00000064    SI: 00000000 00000064
+      M2 POS SI = DEG
+        format count=1 type=2 chars=11 dp=0
+        RAW: 00000000 00000168    PCT: 00000000 00000064    SI: 00000000 00000168
+      M3 APOS SI = DEG
+        format count=1 type=1 chars=3 dp=0
+        RAW: 00000000 000000B3    PCT: 00000000 000000C8    SI: 00000000 000000B3
+      M4 CALIB SI = CAL
+        format count=2 type=1 chars=5 dp=0
+        RAW: 00000000 00000E10    PCT: 00000000 00000064    SI: 00000000 00000E10
+      M5 STATS SI = MIN
+        format count=14 type=1 chars=5 dp=0
+        RAW: 00000000 0000FFFF    PCT: 00000000 00000064    SI: 00000000 0000FFFF
+      C0: M1+M2+M3
+         speed PID: 00000BB8 00000064 00002328 00000438
+      position PID: 00002EE0 000003E8 00013880 00000000
+
+For each port the HAT ports the type and ID of any device connected. For active
+devices it also gives the number of 'modes' and 'views', the baud rate of the
+HAT's connection to the device, and the device's hardware and software version numbers.
+Next comes a list of the available modes, any possible combi modes, and 
+any recommended PID parameters.
+
+The first line for each mode gives its name (such as ``LEV``) and unit, such as ``PCT`` or ``DEG``.
+The second line gives the number of data items in the mode (usually 1) , its type
+(0=signed char, 1=signed short, 2=signed int, 3=float), a hint as to a suitable number of characters
+to use to display its value, and a suitable number of decimal places.
+The third line gives minimum and maximum values for the data in that mode in various units.
 
 ### ``clear_faults``
 
@@ -301,14 +366,126 @@ The following are some simple examples to illustrate how to use the above comman
 
 Plug the motor into port 0. Then send
 
-``port 0 ; plimit 1 ; set triangle 0 1 10 0``
+``port 0``
 
-The motor will accelerate to full speed and back to zero continuously with a period of ten seconds.
+to address port 0,
 
-``port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; bias .4 ; pid 0 0 5 s2 0.0027777778 1 5 0 .1 3 ; set square 0 1 3 0``
+``plimit 1``
 
-The motor will alternately rotate one revolution clockwise and one revolution
+to remove the power limit, and
+
+``set triangle 0 1 10 0``
+
+to generate a triangle wave setpoint. The motor will accelerate to full speed and
+decelerate back to zero continuously with a period of ten seconds.
+
+Now try
+
+``port 0``
+
+``combi 0 1 0 2 0 3 0``
+
+to select a combi mode with index zero containing data from modes 1, 2 and 3,
+
+``select 0``
+
+to select this combi mode, and
+
+``plimit 1 ; bias .4``
+
+to remove the power limit and set a reasonable bias value for the motor.
+You can now set up a position PID controller that reads a 2-byte value
+from offset 5 in this combi mode, which is the absolute position of
+the motor in degrees, from –180° to +179°. We scale this by 1/360=0.0027777778
+to get a position in revolutions from –0.5 to +0.5, unwrap the phase with
+a modulo of 1:
+
+``pid 0 0 5 s2 0.0027777778 1 5 0 .1 3``
+
+Here the PID parameters are Kp=5, Ki=0 and Kd=0.1. The integral windup limit
+is set arbitrarily at 3.
+
+Now if you send
+
+``set square 0 1 3 0``
+
+the motor will alternately rotate one revolution clockwise and one revolution
 anticlockwise with a period of three seconds.
+
+### Using the colour sensor from the SPIKE Prime set
+
+``port 0 ; plimit 1 ; set -1 ; select 0``
+
+will turn on the sensor's light and continuously report a number corresponding
+to the colour detected. The sensor has many other modes.
+
+### Using the ultrasonic distance sensor from the SPIKE Prime set
+
+``port 0 ; plimit 1 ; set -1 ; select 1``
+
+will power up the sensor and continuously report a number corresponding
+to the distance to the object in front of the sensor in millimetres.
+
+To control the four LEDs on the sensor use the following sequence
+
+``select 5 ; write1 c5 pp qq rr ss``
+
+where ``pp``, ``qq``, ``rr`` and ``ss`` are four hexadecimal numbers from 0 to
+0x64 (100 decimal) that control the brightnesses of the individual LEDs.
+
+### Using the force sensor from the SPIKE Prime set
+
+``port 0 ; select 0``
+
+will continuously report a number corresponding to the force detected.
+
+### Using the 3x3 colour light matrix from the SPIKE Essential set
+
+``port 0 ; plimit 1 ; set -1``
+
+will turn on the light matrix. If the device does not receive power
+shortly after connection is established it will disconnect.
+
+``select 0 ; write1 c0 p``
+
+where ``p`` is a number from 0 to 9 will light the matrix in bar-graph style
+according to the value of ``p``.
+
+``select 1 ; write1 c1 p``
+
+where ``p`` is a hexadecimal number from 0 to 0x0a will light the matrix in a solid
+colour according to the value of ``p``: 0=off; 1=red; 2=magenta; 3=blue; 4=cyan; 5=pale green; 6=green;
+7=yellow; 8=orange; 9=red, 0a=white.
+
+The most flexible mode is mode 2, where you can specify the colour of each LED individually.
+
+``select 2 ; write1 c2 12 23 34 45 12 23 34 45 12``
+
+gives a random pattern of dull colours and
+
+``write1 c2 67 72 78 82 89 92 9a a4 aa``
+
+gives some random bright ones.
+The first hex digit (from 0 to a) specifies the brightness and
+the second hex digit (from 0 to a) the basic colour. So for example
+
+``write1 c2 1a 2a 3a 4a 5a 6a 7a 8a 9a``
+
+gives shades of white and
+
+``write1 c2 a1 a2 a3 a4 a5 a6 a7 a8 a9``
+
+gives all the basic colours at full brightness.
+
+Mode 3 allows you to specify transitions.
+
+``write1 c3 1``
+
+enables row-by-row animated transitions, while
+
+``write1 c3 2``
+
+enables a fade to black and fade back up.
 
 ## Passive ID codes
 
@@ -319,20 +496,25 @@ anticlockwise with a period of three seconds.
 |  3 | System turntable motor |
 |  4 | general PWM/third party |
 |  5 | button/touch sensor |
-|  6 | Technic large motor |
-|  7 | Technic XL motor (but note that some have active ID) |
+|  6 | Technic large motor (some have active ID) |
+|  7 | Technic XL motor (some have active ID) |
 |  8 | simple lights |
 |  9 | Future lights 1 |
 | 10 | Future lights 2 |
 | 11 | System future actuator (train points) |
 
 ## Active ID codes
+
 | ID (hex) | Device |
 | --- | --- |
-|  1 | System medium motor |
-
-## TODO
-
-- expand list command details
-- give all reverse-engineered info about how to use devices?
-- improve examples
+| 25 | colour and distance sensor |
+| 26 | Medium linear motor |
+| 2E | Technic large motor |
+| 2F | Technic XL motor |
+| 30 | SPIKE Prime medium motor |
+| 31 | SPIKE Prime large motor |
+| 3D | SPIKE Prime colour sensor |
+| 3E | SPIKE Prime ultrasonic distance sensor |
+| 3F | SPIKE Prime force sensor |
+| 40 | SPIKE Essential 3x3 colour light matrix |
+| 41 | SPIKE Essential small angular motor |
