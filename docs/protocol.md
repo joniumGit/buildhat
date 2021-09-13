@@ -135,7 +135,7 @@ Sets the behaviour of the HAT's LEDs.
 
 | ``ledmode`` | Effect |
 | :---: | --- |
-| –1 | LEDs lit depend on the voltage present on the input power jack |
+| –1 | LEDs lit depend on the voltage on the input power jack (default) |
 |  0 | LEDs off |
 |  1 | orange |
 |  2 | green |
@@ -448,7 +448,7 @@ shortly after connection is established it will disconnect.
 
 ``select 0 ; write1 c0 p``
 
-where ``p`` is a number from 0 to 9 will light the matrix in bar-graph style
+where ``p`` is a number from 0 to 9, will light the matrix in bar-graph style
 according to the value of ``p``.
 
 ``select 1 ; write1 c1 p``
