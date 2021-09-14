@@ -31,7 +31,7 @@ commands described here.
 
 The firmware numbers the ports from 0 to 3. There is the notion
 of the 'current port', set using the ``port`` command. Many
-commands implcitly address the current port.
+commands implicitly address the current port.
 
 Each port may have a device connected to it. A device may be
 'active', which means that it communicates with the HAT using
