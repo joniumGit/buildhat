@@ -62,8 +62,10 @@ unsigned int checksum(UC*p,int l) {
   return u;
   }
 
+static void cmd_version() { ostr("BuildHAT bootloader version "); ostrnl(BLVERSION); }
+
 static void cmd_help() {
-  ostrnl(BLVERSION);
+  cmd_version();
   ostrnl("Commands available:");
   ostrnl("  help, ?                  : display this text");
   ostrnl("  version                  : display version string");
@@ -164,8 +166,6 @@ static int cmd_reboot() {
   return 0;
   }
 
-static int cmd_version() { ostrnl(BLVERSION); return 0; }
-
 void cmd_prompt() { ostr("BHBL> "); }
 
 void proc_cmd() {
@@ -180,7 +180,7 @@ void proc_cmd() {
     else if(strmatch("clear"    )) { if(cmd_clear())     goto err; }
     else if(strmatch("verify"   )) { if(cmd_verify())    goto err; }
     else if(strmatch("reboot"   )) { if(cmd_reboot())    goto err; }
-    else if(strmatch("version"  )) { if(cmd_version())   goto err; }
+    else if(strmatch("version"  )) cmd_version();
     else goto err;
     }
 err:
