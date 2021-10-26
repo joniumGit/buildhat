@@ -245,14 +245,20 @@ void port_initdriver(int p) {
   port_setreg(p,0x6B,0x00); // disable pull-ups/downs on GPIO5/6
 //  port_setreg(p,0x67,0x6A);
 //  port_setreg(p,0x68,0x15); // enable 10kΩ pull-ups and Schmitt triggers on SCL, SDA !!!
-  port_setreg(p,0x12,0x34); // enable open-drain mode for fault signal
   port_setreg(p,0x97,0x01); // fault signal
   port_setreg(p,0x98,0x00); // fault signal
   port_setreg(p,0x5C,0x20); // set PWM0 Period CLK to OSC1 Flex-Div
   port_setreg(p,0x5D,0x03); // set OSC1 Flex-Div to 4
   port_setreg(p,0x9D,0x0E); // set 2-bit LUT2 Logic to OR
+  port_setreg(p,0x18,0x3C); // bits 5..0 Matrix OUT 33 IN0 LUT2_2 OCP FAULT) 7..6 below 
   port_setreg(p,0x19,0x7A); // connection 2-bit LUT2 IN1 to I2C OUT7  Connection 2-bit LUT2 IN0 to PWM0 OUT+
-  port_setreg(p,0x1A,0x06); //
+  port_setreg(p,0x1A,0x06); // 7..2 Matrix out 33 DFF3 clk to LUT2_0 out  1:0 above
+  
+  port_setreg(p,0x92,0xc5); // LUT2_3 values
+  port_setreg(p,0x15,0xF2); // 5..0 Matrix OUT28 IN1 LUT2_0 to Fault_A , 7..6 below
+  port_setreg(p,0x16,0x0B); // 3..0 Matrix OUT29 IN0 LUT2_3 to ACMP1H , 7..4 next byte ( GND)
+  port_setreg(p,0x21,0x44); // 7..2 Matrix out 33 DFF3 clk to LUT2_0 out  1:0 above
+  
   port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
   port_setreg(p,0x0C,0x03); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
   port_setreg(p,0x0A,0x60); // enable slow decay mode
