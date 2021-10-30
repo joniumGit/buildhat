@@ -100,13 +100,18 @@ void go() {
       delay[i]=0;
       switch(state[i]) {
     case 0:
-        d->signature=0;
         d->id=0;
+        if(d->connected) { o1ch('P'); o1hex(i); ostrnl(": disconnected"); }
         d->connected=0;
         port_initpwm(i);
+        state[i]++;
+        break;
+    case 1:
+        d->signature=0;
         counters[i][0]=0;
         state[i]++;
-    case 1:
+        break;
+    case 2:
         if(counters[i][0]<4) pin_a=p->pin_tx,pin_b=p->pin_rx;
         else                 pin_a=p->pin_rx,pin_b=p->pin_tx;
         gpio_set_dir(pin_a,0);
@@ -120,20 +125,19 @@ void go() {
         delay[i]=10;                               // at least 6ms for settling, so we cannot generate a valid character
         state[i]++;
         break;
-    case 2:
+    case 3:
         u=port_state56(i);
         if(u&1) d->signature|=0x001<<counters[i][0];
         if(u&2) d->signature|=0x100<<counters[i][0];
         counters[i][0]++;
-        if(counters[i][0]<8) state[i]--;
+        if(counters[i][0]<8) state[i]--;       // loop between states 1 and 2 until we have collected the signature
         else                 state[i]++;
         break;
-    case 3:
+    case 4:
         gpio_set_dir(pin_a,0);
         gpio_set_dir(pin_b,0);
 DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o4hex(d->signature); }
         if((d->signature&0x00ef)==0x00cf) d->signature=0x00cf; // ignore random RX data from active ID
-        if((d->signature&0x9999)==0x8888) d->signature=0xcccc; // all possible signatures from button
         switch(d->signature) {
       default:
       case 0x0cc0: id= 0; break;               // nothing connected
@@ -141,6 +145,9 @@ DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o4hex(d->signatu
       case 0x00ff: id= 2; break;               // System train motor
       case 0xff00: id= 3; break;               // System turntable motor
       case 0x0000: id= 4; break;               // general PWM/third party
+      case 0x8888:
+      case 0x8c8c:
+      case 0xc8c8:
       case 0xcccc: id= 5; break;               // button/touch sensor
       case 0xffff: id= 6; break;               // Technic large motor
       case 0xff80: id= 7; break;               // Technic XL motor (note that some have active ID!)
@@ -155,15 +162,14 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
           state[i]=90;                             // attempt to decode active ID
           break;
           }
-        state[i]=0;
-        delay[i]=100;
         if((d->id!=0&&id!=d->id) || id==0) {       // non-constant ID: reset
-          if(d->connected) { o1ch('P'); o1hex(i); ostrnl(": disconnected"); }
-          d->connected=0;
           d->id=0;
           counters[i][1]=0;
+          state[i]=0;                              // reset everything
           break;
           }
+        delay[i]=100;
+        state[i]=1;                                // try to establish connection
         d->id=id;                                  // set provisional ID
         if(counters[i][1]<5) {                     // attempt to get 5 matching IDs quickly
           counters[i][1]++;
@@ -174,7 +180,11 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         d->connected=1;                            // we have 5 matching IDs, so mark as connected
         if(id==5) {                                // button/touch sensor?
           delay[i]=0;                              // then reinterrogate quickly to respond better to presses
-          d->buttonpressed=(d->signature==0xcccc);
+          u=(d->signature!=0xcccc);
+          if(d->buttonpressed!=u) {
+            o1ch('P'); o1hex(i); ostrnl(u?": button pressed":": button released");
+            }
+          d->buttonpressed=u;
           }
         break;
 
