@@ -259,6 +259,10 @@ void port_initdriver(int p) {
   port_setreg(p,0x16,0x0B); // 3..0 Matrix OUT29 IN0 LUT2_3 to ACMP1H , 7..4 next byte ( GND)
   port_setreg(p,0x21,0x44); // 7..2 Matrix out 33 DFF3 clk to LUT2_0 out  1:0 above
   
+  port_setreg(p,0x2A,0xBE); // Make Fault Pin sourced from live inputs instead of latched inputs
+  port_setreg(p,0x2B,0x10); // 
+  port_setreg(p,0x2C,0x10); // 
+  
   port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
   port_setreg(p,0x0C,0x03); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
   port_setreg(p,0x0A,0x60); // enable slow decay mode
