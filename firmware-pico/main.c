@@ -80,7 +80,7 @@ void go() {
       }
     if(gtimers[1]>=0) {
       if(gpio_get(PIN_MOTORFAULT)!=0) gtimers[1]=0;       // hold at 0 while no fault
-      if(gtimers[1]>0) {
+      if(gtimers[1]>10) {
         ostrnl("Motor power fault");
         port_checkmfaults();
         gtimers[1]=-1000;
