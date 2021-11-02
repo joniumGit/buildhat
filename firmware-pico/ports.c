@@ -240,6 +240,29 @@ void port_clearfaults() {
     }
   }
 
+void port_checkmfaults() {
+  int i,p;
+  UC t[NPORTS*3];
+  UC r;
+  r=0x4d;
+  for(p=0;p<NPORTS;p++) {
+    if(i2c_write(porthw[p].i2c,porthw[p].i2c_add,&r   ,1,0)==-2) goto err;
+    if(i2c_read (porthw[p].i2c,porthw[p].i2c_add,t+p*3,3,0)==-2) goto err;
+    }
+  ostrnl(" Port 4D 4E 4F");
+  for(p=0;p<NPORTS;p++) {
+    ostr("   "); odec(p); ostr(" ");
+    for(i=0;i<3;i++) {
+      osp();
+      o2hex(t[p*3+i]);
+      }
+    onl();
+    }
+  return;
+err:
+  ostrnl("Error reading fault flags");
+  }
+
 void port_initdriver(int p) {
   port_setreg(p,0x6A,0x00);
   port_setreg(p,0x6B,0x00); // disable pull-ups/downs on GPIO5/6
