@@ -286,8 +286,12 @@ void port_initdriver(int p) {
   port_setreg(p,0x2B,0x10); // 
   port_setreg(p,0x2C,0x10); // 
   
+  port_setreg(p,0x42,0xC0); // Pulse delay input from 2bit LUT2 OUT
+  port_setreg(p,0x9A,0x20); // Rising edge, 486ns pulse
+  
+  port_setreg(p,0x6D,0x1E); // enable OCP blanking for HV OUT 1
   port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
-  port_setreg(p,0x0C,0x03); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x0C,0x0F); // connection HV OUT CTRL1 EN Input via pulse delay
   port_setreg(p,0x0A,0x60); // enable slow decay mode
   port_setreg(p,0x0D,0x60); //
   port_setreg(p,0x3C,0x16); // connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
