@@ -240,6 +240,29 @@ void port_clearfaults() {
     }
   }
 
+void port_checkmfaults() {
+  int i,p;
+  UC t[NPORTS*3];
+  UC r;
+  r=0x4d;
+  for(p=0;p<NPORTS;p++) {
+    if(i2c_write(porthw[p].i2c,porthw[p].i2c_add,&r   ,1,0)==-2) goto err;
+    if(i2c_read (porthw[p].i2c,porthw[p].i2c_add,t+p*3,3,0)==-2) goto err;
+    }
+  ostrnl(" Port 4D 4E 4F");
+  for(p=0;p<NPORTS;p++) {
+    ostr("   "); odec(p); ostr(" ");
+    for(i=0;i<3;i++) {
+      osp();
+      o2hex(t[p*3+i]);
+      }
+    onl();
+    }
+  return;
+err:
+  ostrnl("Error reading fault flags");
+  }
+
 void port_initdriver(int p) {
   port_setreg(p,0x6A,0x00);
   port_setreg(p,0x6B,0x00); // disable pull-ups/downs on GPIO5/6
@@ -259,8 +282,16 @@ void port_initdriver(int p) {
   port_setreg(p,0x16,0x0B); // 3..0 Matrix OUT29 IN0 LUT2_3 to ACMP1H , 7..4 next byte ( GND)
   port_setreg(p,0x21,0x44); // 7..2 Matrix out 33 DFF3 clk to LUT2_0 out  1:0 above
   
+  port_setreg(p,0x2A,0xBE); // Make Fault Pin sourced from live inputs instead of latched inputs
+  port_setreg(p,0x2B,0x10); // 
+  port_setreg(p,0x2C,0x10); // 
+  
+  port_setreg(p,0x42,0xC0); // Pulse delay input from 2bit LUT2 OUT
+  port_setreg(p,0x9A,0x20); // Rising edge, 486ns pulse
+  
+  port_setreg(p,0x6D,0x1E); // enable OCP blanking for HV OUT 1
   port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
-  port_setreg(p,0x0C,0x03); // connection HV OUT CTRL1 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x0C,0x0F); // connection HV OUT CTRL1 EN Input via pulse delay
   port_setreg(p,0x0A,0x60); // enable slow decay mode
   port_setreg(p,0x0D,0x60); //
   port_setreg(p,0x3C,0x16); // connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
