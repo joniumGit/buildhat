@@ -51,6 +51,7 @@ void go() {
   int timers[NPORTS][NTIMERS];
   int gtimers[NTIMERS];
   int counters[NPORTS][NCOUNTERS];
+  int sig[NPORTS];
   unsigned int t0,deltat;
   for(i=0;i<NPORTS;i++) {
     state[i]=0;
@@ -109,9 +110,12 @@ void go() {
         state[i]++;
         break;
     case 1:
-        d->signature=0;
+        sig[i]=0;
         counters[i][0]=0;
         state[i]++;
+        gpio_pull_down(p->pin_tx); // put TX and RX pins into a known state
+        gpio_pull_down(p->pin_rx);
+        delay[i]=10;               // and allow to settle
         break;
     case 2:
         if(counters[i][0]<4) pin_a=p->pin_tx,pin_b=p->pin_rx;
@@ -121,42 +125,51 @@ void go() {
         switch(counters[i][0]%4) {
       case 0: gpio_set_dir(pin_b,1); gpio_put(pin_b,0);     break; // output L
       case 1: gpio_set_dir(pin_b,0); gpio_pull_down(pin_b); break; // input, pull-down
-      case 2: gpio_set_dir(pin_b,0); gpio_pull_up(pin_b);   break; // input, pull-up
-      case 3: gpio_set_dir(pin_b,1); gpio_put(pin_b,1);     break; // output H
+      case 2: gpio_set_dir(pin_b,1); gpio_put(pin_b,1);     break; // output H
+      case 3: gpio_set_dir(pin_b,0); gpio_pull_up(pin_b);   break; // input, pull-up
           }
-        delay[i]=10;                               // at least 6ms for settling, so we cannot generate a valid character
+        delay[i]=1;                               // at least 6ms for settling, so we cannot generate a valid character
         state[i]++;
         break;
     case 3:
+        if(counters[i][0]<4) pin_a=p->pin_tx,pin_b=p->pin_rx;
+        else                 pin_a=p->pin_rx,pin_b=p->pin_tx;
         u=port_state56(i);
-        if(u&1) d->signature|=0x001<<counters[i][0];
-        if(u&2) d->signature|=0x100<<counters[i][0];
+        if(u&1) sig[i]|=0x001<<counters[i][0];
+        if(u&2) sig[i]|=0x100<<counters[i][0];
+        gpio_pull_down(pin_a);                   // set to defined level during settling time
         counters[i][0]++;
-        if(counters[i][0]<8) state[i]--;       // loop between states 1 and 2 until we have collected the signature
+        if(counters[i][0]<8) state[i]--;         // loop between states 1 and 2 until we have collected the signature
         else                 state[i]++;
+        delay[i]=10;                             // at least 6ms for settling, so we cannot generate a valid character
         break;
     case 4:
         gpio_set_dir(pin_a,0);
         gpio_set_dir(pin_b,0);
-DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o4hex(d->signature); }
+        d->signature=sig[i];
+DEB_SIG         { o1ch('P'); o1hex(i); ostr(": D5 signature="); o4hex(sig[i]); }
         if((d->signature&0x00ef)==0x00cf) d->signature=0x00cf; // ignore random RX data from active ID
         switch(d->signature) {
       default:
+      case 0x1cc0:                             // extra case to cover board build with RS-485 drivers not fitted
       case 0x0cc0: id= 0; break;               // nothing connected
-      case 0x0080: id= 1; break;               // System medium motor
+      case 0x0040: id= 1; break;               // System medium motor
       case 0x00ff: id= 2; break;               // System train motor
       case 0xff00: id= 3; break;               // System turntable motor
       case 0x0000: id= 4; break;               // general PWM/third party
-      case 0x8888:
-      case 0x8c8c:
-      case 0xc8c8:
+      case 0x4444:
+      case 0x4c4c:
+      case 0xc4c4:
       case 0xcccc: id= 5; break;               // button/touch sensor
       case 0xffff: id= 6; break;               // Technic large motor
-      case 0xff80: id= 7; break;               // Technic XL motor (note that some have active ID!)
-      case 0x0c80: id= 8; break;               // simple lights
+      case 0xff40: id= 7; break;               // Technic XL motor (note that some have active ID!)
+      case 0x1c40:                             // extra case to cover board build with RS-485 drivers not fitted
+      case 0x0c40: id= 8; break;               // simple lights
+      case 0x1cff:                             // extra case to cover board build with RS-485 drivers not fitted
       case 0x0cff: id= 9; break;               // Future lights 1
+      case 0x1c00:                             // extra case to cover board build with RS-485 drivers not fitted
       case 0x0c00: id=10; break;               // Future lights 2
-      case 0x08c0: id=11; break;               // System future actuator (train points)
+      case 0x04c0: id=11; break;               // System future actuator (train points)
       case 0x00cf: id=99; break;               // potentially an active ID
           }
 DEB_SIG        { ostr(" id="); odec(id); onl(); }
