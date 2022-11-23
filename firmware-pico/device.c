@@ -91,6 +91,12 @@ void device_dumpmodevar(int port,int mode,int offset,int format) {
   float v;
   if(device_varfrommode(port,mode,offset,format,&v)==0) return;
   o1ch('P'); o1hex(port); ostr("V: "); ostrnl(sfloat(v));
+  if(portinfo[port].selmodeonce==1) {
+    ostrnl("SMO->0");
+    portinfo[port].selmodeonce=0;
+    portinfo[port].selmode=-1;
+    portinfo[port].selrxcount=0;
+    }
   }
 
 void device_dumpmoderaw(int port,int mode) {
@@ -159,6 +165,7 @@ void device_dumpmodefmt(int port,int mode) {
     }
   onl();
   if(portinfo[port].selmodeonce==1) {
+    ostrnl("SMO->0");
     portinfo[port].selmodeonce=0;
     portinfo[port].selmode=-1;
     portinfo[port].selrxcount=0;

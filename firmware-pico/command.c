@@ -210,9 +210,15 @@ static int cmd_bias()        {
   }
 static int cmd_select(int f) { // f=0: normal mode; f=1 report value only once ("selonce" command)
   int u;
-  if(!parseint(&u))  goto off; CLAMP(u,0,MAXNMODES-1); portinfo[cmdport].selmode=u;
-  if(!parseint(&u))  goto raw; CLAMP(u,0,127);         portinfo[cmdport].seloffset=u;
-  if(!parsefmt(&u))  goto err;                         portinfo[cmdport].selformat=u;
+  if(!parseint(&u)) goto off;         // no arguments? turn off data output
+  CLAMP(u,0,MAXNMODES-1);
+  portinfo[cmdport].selmode=u;        // with one argument we have a mode
+  if(!parseint(&u)) goto raw;         // only one argument? then raw data output
+  CLAMP(u,0,127);                     // otherwise formatted data output
+  portinfo[cmdport].seloffset=u;
+  if(!parsefmt(&u)) goto err;
+  portinfo[cmdport].selformat=u;
+  ostrnl("SMO->f");
   portinfo[cmdport].selmodeonce=f;
   device_sendselect(cmdport,portinfo[cmdport].selmode);
   portinfo[cmdport].selrxcount=0;
@@ -222,7 +228,9 @@ off:
   portinfo[cmdport].selrxcount=0;
   return 0;
 raw:
+//  o1ch('P'); odec(cmdport); o1ch('S'); o1ch('m'); odec(u); o1ch('f'); odec(f); onl();
   portinfo[cmdport].seloffset=-1;
+  ostrnl("SMO->f");
   portinfo[cmdport].selmodeonce=f;
   device_sendselect(cmdport,portinfo[cmdport].selmode);
   portinfo[cmdport].selrxcount=0;

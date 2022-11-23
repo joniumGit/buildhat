@@ -303,41 +303,49 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             state[i]=0;
             }
           if(timers[i][1]>500) {
+            o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); onl();
             o1ch('P'); o1hex(i); ostrnl(": timeout during data phase: disconnecting");
             port_uartoff(i);
             portinfo[i].selmode=-1;
             state[i]=0;
             }
           }
-        else timers[i][1]=0;                       // reset watchdog
-        if(timers[i][0]>=100) {                    // send a NACK every 100ms
+        else {
+//          o1ch('R'); o1hex(i); onl();
+          timers[i][1]=0;                        // we have received a message from this device, so reset its watchdog
+          timers[i][0]=0;                        // and NACK timeout
+          }
+        if(timers[i][0]>=100) {                  // send a NACK every 100ms
           timers[i][0]-=100;
           state[i]++;
           }
         if(portinfo[i].selrxcount==0) timers[i][3]=0;      // hold timer reset until we receive at least one message
-        if(timers[i][3]>=100) {
+        if(timers[i][3]>=100) {                  // provide parsed mode data every 100ms if selected
           timers[i][3]-=100;
           if(portinfo[i].selmode>=0) {
             if(portinfo[i].seloffset<0) {
               device_dumpmodefmt(i,portinfo[i].selmode);
               }
-            else                        device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
+            else device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
             }
           }
         break;
     case 201:
+        o1ch('N'); o1hex(i); onl();
         device_sendsys(i,2);                       // send NACK
         state[i]--;
         break;
-        }
-      }
+        }                                        // end of state machine
+      }                                          // end of port loop
+
     for(i=0;i<NPORTS;i++) {
       if(timers[i][2]>=PWM_UPDATE) {             // PID update
         timers[i][2]-=PWM_UPDATE;
         proc_pwm(i);
         }
       }
-    proc_ctrl();
+
+    proc_ctrl();                                 // process any incoming commands
     }
   }
 

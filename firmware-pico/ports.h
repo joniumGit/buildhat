@@ -16,8 +16,8 @@ extern struct portinfo {
   volatile int txlen;                              // buffer length
 
   int selmode;                                     // mode selected by "select" command or -1 for none
-  int seloffset;
-  int selformat;
+  int seloffset;                                   // offset of variable to report, or -1 for all mode data
+  int selformat;                                   // format of mode data (int8/int32/float etc.)
   unsigned int selrxcount;                         // count of messages received
   int selmodeonce;                                 // in "once only" mode for reporting data?
 
