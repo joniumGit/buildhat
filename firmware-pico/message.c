@@ -183,7 +183,10 @@ DEB_DPY {
       }
     memcpy(d->modedata[m->mode],m->payload,m->plen);
     d->modedatalen[m->mode]=m->plen;
-    if(m->mode==portinfo[pn].selmode) portinfo[pn].selrxcount++;
+    if(m->mode==portinfo[pn].selmode) {
+      portinfo[pn].selrxcount++;
+      portinfo[pn].selrxever=1;
+      }
     break;
 default:
 DEB_UKM {

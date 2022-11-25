@@ -9,6 +9,7 @@ extern int echo;
 
 extern int i1chu();
 extern void o1chu(int c);
+extern int ctrl_ospace();
 extern void init_control();
 extern int w1ch();
 extern void parse_reset();

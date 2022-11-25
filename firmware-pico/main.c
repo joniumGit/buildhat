@@ -43,6 +43,11 @@
 // counter 1: how many times we have seen this passive ID consecutively (up to 5)
 #define NCOUNTERS 2
 
+static void reportmode(int i) {
+  if(portinfo[i].seloffset<0) device_dumpmodefmt(i,portinfo[i].selmode);
+  else                        device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
+  }
+
 void go() {
   int i,j,u;
   int id;
@@ -311,28 +316,41 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             }
           }
         else {
-//          o1ch('R'); o1hex(i); onl();
+          o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); osp();
+          o1ch('R'); o1hex(i); onl();
           timers[i][1]=0;                        // we have received a message from this device, so reset its watchdog
           timers[i][0]=0;                        // and NACK timeout
           }
-        if(timers[i][0]>=100) {                  // send a NACK every 100ms
+        if(timers[i][0]>=100) {                  // make sure we send a NACK every 100ms in the absence of other communications
           timers[i][0]-=100;
           state[i]++;
           }
-        if(portinfo[i].selrxcount==0) timers[i][3]=0;      // hold timer reset until we receive at least one message
-        if(timers[i][3]>=100) {                  // provide parsed mode data every 100ms if selected
-          timers[i][3]-=100;
-          if(portinfo[i].selmode>=0) {
-            if(portinfo[i].seloffset<0) {
-              device_dumpmodefmt(i,portinfo[i].selmode);
-              }
-            else device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
-            }
+        if(portinfo[i].selmode<0) break;         // not listening for mode data?
+        if(portinfo[i].selrxcount==0) {
+          timers[i][3]=0;                        // hold timer reset until we receive at least one message
+          break;
+          }
+        if(!ctrl_ospace()) break;                // if there is not plenty of room in the output buffer, do not output anything
+        if(portinfo[i].selreprate==-1) {         // "once only" mode?
+          reportmode(i);
+          portinfo[i].selmode=-1;                // disable further reports
+          break;
+          }
+        if(portinfo[i].selreprate==0) {          // "direct" mode?
+          reportmode(i);
+          portinfo[i].selrxcount=0;
+          break;
+          }
+        if(timers[i][3]>=portinfo[i].selreprate) {         // timed mode
+          reportmode(i);
+          timers[i][3]=0;
+          break;
           }
         break;
     case 201:
+        o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); osp();
         o1ch('N'); o1hex(i); onl();
-        device_sendsys(i,2);                       // send NACK
+        device_sendsys(i,2);                     // send NACK
         state[i]--;
         break;
         }                                        // end of state machine
