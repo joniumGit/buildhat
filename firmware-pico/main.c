@@ -44,6 +44,7 @@
 #define NCOUNTERS 2
 
 static void reportmode(int i) {
+//  ostr("report "); o1hex(i); onl();
   if(portinfo[i].seloffset<0) device_dumpmodefmt(i,portinfo[i].selmode);
   else                        device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
   }
@@ -308,7 +309,7 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             state[i]=0;
             }
           if(timers[i][1]>500) {
-            o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); onl();
+//            o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); onl();
             o1ch('P'); o1hex(i); ostrnl(": timeout during data phase: disconnecting");
             port_uartoff(i);
             portinfo[i].selmode=-1;
@@ -316,10 +317,10 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             }
           }
         else {
-          o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); osp();
-          o1ch('R'); o1hex(i); onl();
+//          o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); osp();
+//          o1ch('R'); o1hex(i); onl();
           timers[i][1]=0;                        // we have received a message from this device, so reset its watchdog
-          timers[i][0]=0;                        // and NACK timeout
+//          timers[i][0]=0;                        // and NACK timeout
           }
         if(timers[i][0]>=100) {                  // make sure we send a NACK every 100ms in the absence of other communications
           timers[i][0]-=100;
@@ -348,8 +349,8 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
           }
         break;
     case 201:
-        o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); osp();
-        o1ch('N'); o1hex(i); onl();
+//        o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); osp();
+//        o1ch('N'); o1hex(i); onl();
         device_sendsys(i,2);                     // send NACK
         state[i]--;
         break;
