@@ -109,6 +109,21 @@ int main(int ac,char**av) {
       }
     }
 
+  if(0) { // LED matrix test
+    ostr("debug 0\r");
+    for(;;) {
+      i=wstr(s,1000,1000);
+      if(s[0]) {
+        printf("%.3f: <%s>\n",timestamp(),s);
+        }
+      if(!strncmp(s,"P0: connected to active ID 40",29)) {
+        usleep(20000);
+        printf("%.3f: sending set -1\n",timestamp());
+        ostr("plimit 1 ; set -1\r");
+        }
+      }
+    }
+
   if(1) { // disconnect test
     ostr("debug 0 ; port 0 ; plimit .6 ; set .0\r");
     ostr("combi 0 1 0 2 0 3 0\r");
