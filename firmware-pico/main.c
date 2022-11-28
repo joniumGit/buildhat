@@ -287,14 +287,14 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         device_dump(i);                            // dump device data and pause
         o1ch('P'); o1hex(i); ostr(": established serial communication with active ID "); o2hex(d->type); onl();
         state[i]=200;
-        if(d->type == 0x40){                       // fix to prevent matrix disconnecting
-          portinfo[i].spwaveshape =WAVE_SQUARE;
-          portinfo[i].spwavemin   =1.0;
+        if(d->type==0x40) {                        // the LED matrix (id 0x40) requires power to be applied very quickly after connecting
+          portinfo[i].spwaveshape =WAVE_SQUARE;    // as otherwise it disconnects; doing it here eases the timing requirements on
+          portinfo[i].spwavemin   =1.0;            // the host side
           portinfo[i].spwavemax   =1.0;
           portinfo[i].spwaveperiod=1;
           portinfo[i].spwavephase =0;
           portinfo[i].coast=0;
-        }
+          }
         break;
 
 // ============================= ACTIVE ID: DATA PHASE =========================
