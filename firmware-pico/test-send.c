@@ -128,7 +128,7 @@ int main(int ac,char**av) {
     ostr("debug 0 ; port 0 ; plimit .6 ; set .0\r");
     ostr("combi 0 1 0 2 0 3 0\r");
     sleep(.5);
-    ostr("port 0 ; selonce 0 ; selrate -1\r");
+    ostr("port 0 ; selonce 0\r");
     p=0;
     for(;;) {
       i=wstr(s,1000,1000);

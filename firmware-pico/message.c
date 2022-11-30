@@ -41,7 +41,6 @@ void device_sendint  (int dn,int b0,int b1,unsigned int   v) { device_sendmessag
 
 // send a 2-part SELECT message that works with extended modes
 void device_sendselect(int d,int m) {
-  ostrnl("D_SS");
   device_sendchar(d,0x46,-1,m&0x8);                // MODESET message !!! strictly we should do outgoing message queueing
   device_sendchar(d,0x43,-1,m&0x7);                // SELECT message
   }

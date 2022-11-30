@@ -289,6 +289,7 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         timers[i][1]=0;
         timers[i][3]=0;
         portinfo[i].selmode=-1;
+        portinfo[i].selreprate=-2;
         d->connected=1;
         device_dump(i);                            // dump device data and pause
         o1ch('P'); o1hex(i); ostr(": established serial communication with active ID "); o2hex(d->type); onl();
@@ -306,6 +307,7 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             odec(q->checksumerrors); ostrnl("): disconnecting");
             port_uartoff(i);
             portinfo[i].selmode=-1;
+            portinfo[i].selreprate=-2;
             state[i]=0;
             }
           if(timers[i][1]>500) {
@@ -313,6 +315,7 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             o1ch('P'); o1hex(i); ostrnl(": timeout during data phase: disconnecting");
             port_uartoff(i);
             portinfo[i].selmode=-1;
+            portinfo[i].selreprate=-2;
             state[i]=0;
             }
           }
@@ -320,7 +323,6 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
 //          o1ch('T'); o1hex(i); o1ch(':'); o8hex(timers[i][1]); osp();
 //          o1ch('R'); o1hex(i); onl();
           timers[i][1]=0;                        // we have received a message from this device, so reset its watchdog
-//          timers[i][0]=0;                        // and NACK timeout
           }
         if(timers[i][0]>=100) {                  // make sure we send a NACK every 100ms in the absence of other communications
           timers[i][0]-=100;
@@ -332,9 +334,10 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
           break;
           }
         if(!ctrl_ospace()) break;                // if there is not plenty of room in the output buffer, do not output anything
+        if(portinfo[i].selreprate==-2) break;    // disabled? don't report anything
         if(portinfo[i].selreprate==-1) {         // "once only" mode?
           reportmode(i);
-          portinfo[i].selmode=-1;                // disable further reports
+          portinfo[i].selreprate=-2;             // disable further reports
           break;
           }
         if(portinfo[i].selreprate==0) {          // "direct" mode?

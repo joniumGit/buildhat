@@ -23,7 +23,7 @@ extern struct portinfo {
   int selformat;                                   // format of mode data (int8/int32/float etc.)
   unsigned int selrxcount;                         // incremented on each message received
   int selrxever;                                   // have we ever received a message for this mode since selecting it?
-  int selreprate;                                  // report rate for select messages: -1: once only; 0: as received; ≥1: target interval between reports in ms
+  int selreprate;                                  // report rate for select messages: -2: disabled; -1: once only; 0: as received; ≥1: target interval between reports in ms
 
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled
   int coast;                                       // 1=coasting

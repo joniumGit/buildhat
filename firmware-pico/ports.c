@@ -356,6 +356,7 @@ void init_ports() {
 //    padsbank0_hw->io[p->pin_rx]&=~0x30; // drive strength 2mA
 //    padsbank0_hw->io[p->pin_tx]&=~0x30;
     portinfo[i].selmode=-1;
+    portinfo[i].selreprate=-2;
     }
   gpio_put(PIN_PORTON,1);                          // enable port power
 #ifdef DEBUG_PINS
