@@ -5,8 +5,8 @@
 #include "ports.h"
 #include "../micro-ecc/uECC.h"
 #include "../sha2/sha2.h"
-// #include "key.public.h"
-#include "key.public.dp.202107211610.h"
+#include "key.public.h"
+// #include "key.public.dp.202107211610.h"
 
 #include "version.h"
 

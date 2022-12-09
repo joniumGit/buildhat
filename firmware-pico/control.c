@@ -61,6 +61,13 @@ void o1chu(int c) {
   irq_set_pending(UART0_IRQ);
   }
 
+int ctrl_ospace() {
+  int i;
+  i=ctrltxhead-ctrltxtail;
+  if(i<0) i+=CTRLTXBLEN;               // i now has number of characters in output buffer
+  return i<CTRLTXBLEN/2;               // less than half full?
+  }
+
 void init_control() {
   irq_set_enabled(UART0_IRQ,0);
   ctrlrxhead=ctrlrxtail=0;

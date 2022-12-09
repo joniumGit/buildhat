@@ -356,6 +356,7 @@ void init_ports() {
 //    padsbank0_hw->io[p->pin_rx]&=~0x30; // drive strength 2mA
 //    padsbank0_hw->io[p->pin_tx]&=~0x30;
     portinfo[i].selmode=-1;
+    portinfo[i].selreprate=-2;
     }
   gpio_put(PIN_PORTON,1);                          // enable port power
 #ifdef DEBUG_PINS
@@ -608,9 +609,7 @@ static void port_uart_irq(int pn) {
 
   if(!pio_sm_is_tx_fifo_full(pio,tsm)) {
     if(q->txptr>=0) {
-//      gpio_put(PIN_DEBUG0,1);
       pio_sm_put_blocking(pio,tsm,q->txbuf[q->txptr++]); // send next character
-//      gpio_put(PIN_DEBUG0,0);
       if(q->txptr==q->txlen) {                     // finished?
         q->txptr=-1;
         *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt now

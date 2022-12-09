@@ -43,6 +43,11 @@
 // counter 1: how many times we have seen this passive ID consecutively (up to 5)
 #define NCOUNTERS 2
 
+static void reportmode(int i) {
+  if(portinfo[i].seloffset<0) device_dumpmodefmt(i,portinfo[i].selmode);
+  else                        device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
+  }
+
 void go() {
   int i,j,u;
   int id;
@@ -283,6 +288,7 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
         timers[i][1]=0;
         timers[i][3]=0;
         portinfo[i].selmode=-1;
+        portinfo[i].selreprate=-2;
         d->connected=1;
         device_dump(i);                            // dump device data and pause
         o1ch('P'); o1hex(i); ostr(": established serial communication with active ID "); o2hex(d->type); onl();
@@ -308,44 +314,62 @@ DEB_SIG        { ostr(" id="); odec(id); onl(); }
             odec(q->checksumerrors); ostrnl("): disconnecting");
             port_uartoff(i);
             portinfo[i].selmode=-1;
+            portinfo[i].selreprate=-2;
             state[i]=0;
             }
           if(timers[i][1]>500) {
             o1ch('P'); o1hex(i); ostrnl(": timeout during data phase: disconnecting");
             port_uartoff(i);
             portinfo[i].selmode=-1;
+            portinfo[i].selreprate=-2;
             state[i]=0;
             }
           }
-        else timers[i][1]=0;                       // reset watchdog
-        if(timers[i][0]>=100) {                    // send a NACK every 100ms
+        else {
+          timers[i][1]=0;                        // we have received a message from this device, so reset its watchdog
+          }
+        if(timers[i][0]>=100) {                  // make sure we send a NACK every 100ms in the absence of other communications
           timers[i][0]-=100;
           state[i]++;
           }
-        if(portinfo[i].selrxcount==0) timers[i][3]=0;      // hold timer reset until we receive at least one message
-        if(timers[i][3]>=100) {
-          timers[i][3]-=100;
-          if(portinfo[i].selmode>=0) {
-            if(portinfo[i].seloffset<0) {
-              device_dumpmodefmt(i,portinfo[i].selmode);
-              }
-            else                        device_dumpmodevar(i,portinfo[i].selmode,portinfo[i].seloffset,portinfo[i].selformat);
-            }
+        if(portinfo[i].selmode<0) break;         // not listening for mode data?
+        if(portinfo[i].selrxcount==0) {
+          timers[i][3]=0;                        // hold timer reset until we receive at least one message
+          break;
+          }
+        if(!ctrl_ospace()) break;                // if there is not plenty of room in the output buffer, do not output anything
+        if(portinfo[i].selreprate==-2) break;    // disabled? don't report anything
+        if(portinfo[i].selreprate==-1) {         // "once only" mode?
+          reportmode(i);
+          portinfo[i].selreprate=-2;             // disable further reports
+          break;
+          }
+        if(portinfo[i].selreprate==0) {          // "direct" mode?
+          reportmode(i);
+          portinfo[i].selrxcount=0;
+          break;
+          }
+        if(timers[i][3]>=portinfo[i].selreprate) {         // timed mode
+          reportmode(i);
+          timers[i][3]=0;
+          break;
           }
         break;
     case 201:
-        device_sendsys(i,2);                       // send NACK
+        device_sendsys(i,2);                     // send NACK
         state[i]--;
         break;
-        }
-      }
+        }                                        // end of state machine
+      }                                          // end of port loop
+
     for(i=0;i<NPORTS;i++) {
       if(timers[i][2]>=PWM_UPDATE) {             // PID update
         timers[i][2]-=PWM_UPDATE;
         proc_pwm(i);
         }
       }
-    proc_ctrl();
+
+    proc_ctrl();                                 // process any incoming commands
     }
   }
 

@@ -39,6 +39,7 @@ static void cmd_help() {
   ostrnl("  select               : stop outputting data");
   ostrnl("  selonce <selvar>     : as 'select' but only report one data packet");
   ostrnl("  selonce <selmode>    : as 'select' but only report one data packet");
+  ostrnl("  selrate <selrate>    : set reporting period (use after 'select')");
   ostrnl("  combi <index> <clist>: configure a combi mode with a list of mode/dataset specifiers");
   ostrnl("  combi <index>        : de-configure a combi mode");
 //  ostrnl("  accelerometer        : read accelerometer data once");
@@ -84,6 +85,7 @@ static void cmd_help() {
   ostrnl("                         u2=unsigned short; s2=signed short;");
   ostrnl("                         u4=unsigned int;   s4=signed int;");
   ostrnl("                         f4=float");
+  ostrnl("  <selrate>            : target interval between reports in ms; 0=as reported by device");
   ostrnl("  <clist>              : {<mode> <dataset>}*");
   ostrnl("  <hexbyte>            : 1- or 2-digit hex value");
   ostrnl("  <debugcode>          : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
@@ -122,11 +124,12 @@ static int cmd_pwm()  {
 static int cmd_pid()  {
   unsigned int u;
   float v;
+  int w;
   portinfo[cmdport].setpoint=0;
   if(!parseuint(&u))  goto err; CLAMP(u,0,NPORTS-1);                       portinfo[cmdport].pvport=u;
   if(!parseuint(&u))  goto err; CLAMP(u,0,MAXNMODES-1);                    portinfo[cmdport].pvmode=u;
   if(!parseuint(&u))  goto err; CLAMP(u,0,127);                            portinfo[cmdport].pvoffset=u;
-  if(!parsefmt(&u))   goto err;                                            portinfo[cmdport].pvformat=u;
+  if(!parsefmt(&w))   goto err;                                            portinfo[cmdport].pvformat=w;
   if(!parsefloat(&v)) goto err; CLAMP(u,-32,32);                           portinfo[cmdport].pvscale=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].pvunwrap=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kp=v;
@@ -135,7 +138,6 @@ static int cmd_pid()  {
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].windup=v;
   portinfo[cmdport].pwmmode=1;                     // enable PID controller and trigger messages from device providing process variable
   portinfo[cmdport].coast=0;
-//  device_sendselect(portinfo[cmdport].pvport,portinfo[cmdport].pvmode);
   return 0;
 err:
   portinfo[cmdport].pwmmode=0;
@@ -208,29 +210,46 @@ static int cmd_bias()        {
   portinfo[cmdport].bias=(int)(u*65536+0.5); // Q16
   return 0;
   }
-static int cmd_select(int f) { // f=0: normal mode; f=1 report value only once ("selonce" command)
-  int u;
-  if(!parseint(&u))  goto off; CLAMP(u,0,MAXNMODES-1); portinfo[cmdport].selmode=u;
-  if(!parseint(&u))  goto raw; CLAMP(u,0,127);         portinfo[cmdport].seloffset=u;
-  if(!parsefmt(&u))  goto err;                         portinfo[cmdport].selformat=u;
-  portinfo[cmdport].selmodeonce=f;
-  device_sendselect(cmdport,portinfo[cmdport].selmode);
+static int cmd_select(int f) {        // f=0: normal mode; f=1 report value only once ("selonce" command)
+  int m,u;
+  if(!parseint(&u)) goto off;         // no arguments? turn off data output
+  CLAMP(u,0,MAXNMODES-1);             // with one argument we have a mode
+  m=u;
+  if(!parseint(&u)) {                 // only one argument? then raw data output
+    portinfo[cmdport].seloffset=-1;
+  } else {
+    CLAMP(u,0,127);                   // otherwise formatted data output
+    portinfo[cmdport].seloffset=u;
+    if(!parsefmt(&u)) goto err;
+    portinfo[cmdport].selformat=u;
+    }
+  portinfo[cmdport].selreprate=f?-1:DEFAULT_SELREPRATE;
+  if(portinfo[cmdport].selmode!=m) {
+    device_sendselect(cmdport,m);
+    portinfo[cmdport].selmode=m;
+    }
   portinfo[cmdport].selrxcount=0;
+  portinfo[cmdport].selrxever=0;
   return 0;
 off:
   portinfo[cmdport].selmode=-1;
+  portinfo[cmdport].selreprate=-2;
   portinfo[cmdport].selrxcount=0;
-  return 0;
-raw:
-  portinfo[cmdport].seloffset=-1;
-  portinfo[cmdport].selmodeonce=f;
-  device_sendselect(cmdport,portinfo[cmdport].selmode);
-  portinfo[cmdport].selrxcount=0;
+  portinfo[cmdport].selrxever=0;
   return 0;
 err:
   portinfo[cmdport].selmode=-1;
+  portinfo[cmdport].selreprate=-2;
   portinfo[cmdport].selrxcount=0;
+  portinfo[cmdport].selrxever=0;
   return 1;
+  }
+static int cmd_selrate() {
+  int u;
+  if(!parseint(&u)) return 1;
+  CLAMP(u,0,1000000000);
+  portinfo[cmdport].selreprate=u;
+  return 0;
   }
 static int cmd_combi() {
   int i,j;
@@ -254,6 +273,7 @@ static int cmd_combi() {
     mp->combi_dataset[n]=j;
     }
   b[0]+=n;
+  portinfo[cmdport].selmode=-1;        // make sure we resend a select command after this if necessary
   device_sendmessage(cmdport,0x44,-1,2+n,b);
   return 0;
 err:
@@ -328,6 +348,7 @@ void proc_cmd() {
     else if(strmatch("plimit"       )) { if(cmd_plimit())        goto err; }
     else if(strmatch("select"       )) { if(cmd_select(0))       goto err; }
     else if(strmatch("selonce"      )) { if(cmd_select(1))       goto err; }
+    else if(strmatch("selrate"      )) { if(cmd_selrate())       goto err; }
     else if(strmatch("combi"        )) { if(cmd_combi())         goto err; }
 //    else if(strmatch("accelerometer")) { if(cmd_accelerometer()) goto err; }
     else if(strmatch("write1"       )) { if(cmd_write(1))        goto err; }

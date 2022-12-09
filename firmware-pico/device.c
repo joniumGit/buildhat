@@ -158,9 +158,4 @@ void device_dumpmodefmt(int port,int mode) {
       }
     }
   onl();
-  if(portinfo[port].selmodeonce==1) {
-    portinfo[port].selmodeonce=0;
-    portinfo[port].selmode=-1;
-    portinfo[port].selrxcount=0;
-    }
   }

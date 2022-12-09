@@ -4,6 +4,9 @@
 
 #define TXBLEN 132                                 // maximum message length
 #define PWM_PERIOD 255                             // in units of ~40μs/255
+
+#define DEFAULT_SELREPRATE 100
+
 extern int pwm_drive_limit;
 
 extern struct portinfo {
@@ -16,10 +19,11 @@ extern struct portinfo {
   volatile int txlen;                              // buffer length
 
   int selmode;                                     // mode selected by "select" command or -1 for none
-  int seloffset;
-  int selformat;
-  unsigned int selrxcount;                         // count of messages received
-  int selmodeonce;                                 // in "once only" mode for reporting data?
+  int seloffset;                                   // offset of variable to report, or -1 for all mode data
+  int selformat;                                   // format of mode data (int8/int32/float etc.)
+  unsigned int selrxcount;                         // incremented on each message received
+  int selrxever;                                   // have we ever received a message for this mode since selecting it?
+  int selreprate;                                  // report rate for select messages: -2: disabled; -1: once only; 0: as received; ≥1: target interval between reports in ms
 
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled
   int coast;                                       // 1=coasting
