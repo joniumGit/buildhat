@@ -609,10 +609,7 @@ static void port_uart_irq(int pn) {
 
   if(!pio_sm_is_tx_fifo_full(pio,tsm)) {
     if(q->txptr>=0) {
-//      gpio_put(PIN_DEBUG0,1);
-//      o2hex(q->txbuf[q->txptr]);
       pio_sm_put_blocking(pio,tsm,q->txbuf[q->txptr++]); // send next character
-//      gpio_put(PIN_DEBUG0,0);
       if(q->txptr==q->txlen) {                     // finished?
         q->txptr=-1;
         *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt now
@@ -629,7 +626,6 @@ static void port_uart_irq(int pn) {
 //!!!    return;
 //!!!    }
   if(!pio_sm_is_rx_fifo_empty(pio,rsm)) {         // RX not empty?
-    DEB_SER  o1ch('_');
     b=(int)*((io_rw_8*)&pio->rxf[rsm]+3);           // get byte
     m->check^=b;                                   // accumulate checksum
   DEB_SER  o2hex(b);

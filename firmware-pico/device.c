@@ -158,5 +158,4 @@ void device_dumpmodefmt(int port,int mode) {
       }
     }
   onl();
-
   }
