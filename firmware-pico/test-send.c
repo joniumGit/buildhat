@@ -124,7 +124,7 @@ int main(int ac,char**av) {
       }
     }
 
-  if(1) { // disconnect test
+  if(0) { // disconnect test
     ostr("debug 0 ; port 0 ; plimit .6 ; set .0\r");
     ostr("combi 0 1 0 2 0 3 0\r");
     sleep(.5);
@@ -143,10 +143,32 @@ int main(int ac,char**av) {
       }
     }
 
-  for(;;) {
-    i=wstr(s,1000,500);
-    printf("<%s>\n",s);
-    if(i==-1) break;
+  if(1) { // angular accuracy test
+    double t;
+    int j,p0,p1;
+    ostr("debug 16 ; port 0 ; plimit .96 ; bias .4 ; set .0\r");
+    ostr("port 0; combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 1 s4 0.0027777778 0 2 0 .1 .1 ; set 0\r");
+    for(j=0;j<24;j++) {
+      if(j<12) p0=j,p1=j+1;
+      else     p0=24-j,p1=23-j;
+      sprintf(s,"set ramp %.4f %.4f 1 0\r",p0/12.0,p1/12.0);
+      ostr(s);
+      for(t=timestamp();timestamp()<t+2;) {
+        i=wstr(s,1000,1000);
+        if(s[0]) {
+          printf("%.3f: <%s>\n",timestamp(),s);
+          }
+        if(i==-1) break;
+        }
+      }
+    }
+
+  if(0) {
+    for(;;) {
+      i=wstr(s,1000,500);
+      printf("<%s>\n",s);
+      if(i==-1) break;
+      }
     }
   closetty();
   return 0;
