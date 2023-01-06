@@ -42,13 +42,10 @@ static const float sintab[256]={
   -0.19509,-0.17096,-0.14673,-0.12241,-0.09802,-0.07356,-0.04907,-0.02454
   };
 
-void proc_pwm(int pn) {
+static void getsetpoint(int pn) {
   struct portinfo*p=portinfo+pn;
-  struct devinfo*d=devinfo+pn;
-  int i;
   float u;
-  float pv;
-  float err,derr;
+  int i;
 
   u=p->spwavephaseacc+(PWM_UPDATE/1000.0);
   if(u>=p->spwaveperiod) {
@@ -91,6 +88,15 @@ case WAVE_RAMP:
     break;
     }
   p->setpoint=u;
+  }
+
+void proc_pwm(int pn) {
+  struct portinfo*p=portinfo+pn;
+  struct devinfo*d=devinfo+pn;
+  float u;
+  float err,derr;
+
+  getsetpoint(pn);
   if(!d->connected) {
     port_set_pwm(pn,0);
     return;
@@ -104,17 +110,11 @@ case WAVE_RAMP:
     port_set_pwm(pn,p->setpoint);
     return;
     }
+
 // here we are in PID controller mode: first try to extract the process variable
-  if(device_varfrommode(p->pvport,p->pvmode,p->pvoffset,p->pvformat,&pv)==0) return;
-  pv*=p->pvscale;
-  if(p->pvunwrap!=0) {
-    float dpv=pv-p->pid_pv_last;                   // subtract consecutive sensor readings
-    p->pid_pv_last=pv;
-    if(dpv> p->pvunwrap/2) dpv-=p->pvunwrap;       // normalise increment to ±0.5 of wrap range...
-    if(dpv<-p->pvunwrap/2) dpv+=p->pvunwrap;
-    p->pid_pv+=dpv;                                // ... and change by that amount
-    }
-  else p->pid_pv=pv;
+  if(device_varfrommode(p->pvport,p->pvmode,p->pvoffset,p->pvformat,
+                           p->pvscale,p->pvunwrap,&p->pid_pv_last,&p->pid_pv)==0) return;
+
 DEB_PID { o1ch('P'); o1hex(pn); ostr(": pv="); ostr(sfloat(p->pid_pv)); ostr(" sp="); ostr(sfloat(p->setpoint)); }
   err=p->pid_pv-p->setpoint;
   if(err<0.01&&err>-0.01) err=0;                   // dead zone

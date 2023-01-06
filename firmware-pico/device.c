@@ -63,7 +63,7 @@ void device_dump(int dn) {
   ostr("  position PID:"); for(i=0;i<4;i++) { osp(); o8hex(d->  pospid[i]); } onl();
   }
 
-int device_varfrommode(int port,int mode,int offset,int format,float*var) {
+int device_varfrommode(int port,int mode,int offset,int format,float scale,float unwrap,float*last,float*var) {
   char buf[4];
   int i;
   float v;
@@ -83,13 +83,21 @@ case 0x104: v=(float)*(  signed int*  )buf; break;
 case 0x204: v=       *(         float*)buf; break;
 default:    v=0;
     }
+  v*=scale;
+  if(unwrap!=0) {
+    float dv=v-*last;                            // subtract consecutive sensor readings
+    *last=v;
+    if(dv> unwrap/2) dv-=unwrap;                 // normalise increment to ±0.5 of wrap range...
+    if(dv<-unwrap/2) dv+=unwrap;
+    v+=dv;                                       // ... and change by that amount
+    }
   *var=v;
   return 1;
   }
 
 void device_dumpmodevar(int port,int mode,int offset,int format) {
   float v;
-  if(device_varfrommode(port,mode,offset,format,&v)==0) return;
+  if(device_varfrommode(port,mode,offset,format,1,0,0,&v)==0) return;
   o1ch('P'); o1hex(port); ostr("V: "); ostrnl(sfloat(v));
   }
 

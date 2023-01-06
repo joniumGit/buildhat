@@ -39,7 +39,7 @@ extern struct devinfo {
 
 extern void device_init(int dn);
 extern void device_dump(int dn);
-extern int device_varfrommode(int port,int mode,int offset,int format,float*var);
+extern int device_varfrommode(int port,int mode,int offset,int format,float scale,float unwrap,float*last,float*var);
 extern void device_dumpmodevar(int port,int mode,int offset,int format);
 extern void device_dumpmoderaw(int port,int mode);
 extern void device_dumpmodefmt(int port,int mode);

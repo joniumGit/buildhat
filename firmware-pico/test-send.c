@@ -94,6 +94,26 @@ int main(int ac,char**av) {
   else      opentty("/dev/ttyUSB0");
   usleep(200000);
 
+  if(1) { // speed PID test
+    double t;
+    int j,p0,p1;
+    ostr("debug 16 ; port 0 ; plimit .96 ; bias .4 ; set 0\r");
+    ostr("combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 0 s1   1 0    0.004 -0.0001 0   100\r");
+    for(j=2;j<=10;j+=2) {
+      sprintf(s,"set %.4f\r",(double)j);
+      ostr(s);
+      for(t=timestamp();timestamp()<t+2;) {
+        i=wstr(s,1000,1000);
+        if(s[0]) {
+          printf("%.3f: <%s>\n",timestamp(),s);
+          }
+        if(i==-1) break;
+        }
+      }
+    sprintf(s,"set 0\r");
+    ostr(s);
+    }
+
   if(0) { // simultaneous motors test
     ostr("debug 0 ; port 0\r");
     ostr("combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; bias .3 ; pid 0 0 5 s2 0.0027777778 1 3 0 .1 3\r");
@@ -143,7 +163,7 @@ int main(int ac,char**av) {
       }
     }
 
-  if(1) { // angular accuracy test
+  if(0) { // angular accuracy test
     double t;
     int j,p0,p1;
     ostr("debug 16 ; port 0 ; plimit .96 ; bias .4 ; set .0\r");
