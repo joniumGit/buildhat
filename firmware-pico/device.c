@@ -84,14 +84,16 @@ case 0x204: v=       *(         float*)buf; break;
 default:    v=0;
     }
   v*=scale;
-  if(unwrap!=0) {
+  if(unwrap!=0&&*last<1e38) {                    // unwrapping and we have a valid "last" reading?
     float dv=v-*last;                            // subtract consecutive sensor readings
-    *last=v;
     if(dv> unwrap/2) dv-=unwrap;                 // normalise increment to ±0.5 of wrap range...
     if(dv<-unwrap/2) dv+=unwrap;
-    v+=dv;                                       // ... and change by that amount
+    *var+=dv;                                       // ... and change by that amount
+    *last=v;
+    return 1;
     }
   *var=v;
+  *last=v;
   return 1;
   }
 

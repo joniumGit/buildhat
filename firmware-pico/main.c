@@ -8,10 +8,16 @@
 // echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit .6 ; bias .4 ; pid 0 0 1 s4 0.0027777778 0 5 0 .1 3
 // set square 0 1 3 0
 // set triangle 0 1 15 0
-// set ramp 0 1 10 0
+// set triangle 0 1 5 0
+// set ramp 0 1 1 0
 
 // example for speed PID:
 // echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit .6 ; bias .2 ; pid 0 0 0 s1 1 0 0.003 0.01 0 100 ; set 30
+// example speed PID for small motor:
+// plimit 1 ; bias 0 ; pid 0 0 0 s1   1 0    0.01 0.02 0.0001   100 ; set 10
+
+// another example position PID for small motor:
+// echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; bias .4 ; pid 0 0 5 s2    0.0027777778 1    .3 0.00 0.0   3
 
 #include <string.h>
 #include "common.h"

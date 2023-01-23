@@ -205,7 +205,7 @@ void port_initpwm(int pn) {
   q->spwavephase=0;
   q->spwavephaseacc=0;
   q->pid_pv=0;
-  q->pid_pv_last=0;
+  q->pid_pv_last=1.1e38; // values overr 1e38 flag that there is no valid "last" reading
   q->pid_ierr=0;
   q->pid_perr=0;
   q->pvport=0;

@@ -97,8 +97,10 @@ int main(int ac,char**av) {
   if(1) { // speed PID test
     double t;
     int j,p0,p1;
-    ostr("debug 16 ; port 0 ; plimit .96 ; bias .4 ; set 0\r");
-    ostr("combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 0 s1   1 0    0.004 -0.0001 0   100\r");
+    ostr("debug 16 ; port 0 ; plimit 1 ; bias .4 ; set 0\r");
+    ostr("combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 0 s1   1 0    0.003 0.03 0   100\r");
+# oscillates at Kp=0.02
+pid 0 0 0 s1   1 0    0.01 0.02 0.0001   100
     for(j=2;j<=10;j+=2) {
       sprintf(s,"set %.4f\r",(double)j);
       ostr(s);
