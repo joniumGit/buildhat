@@ -173,15 +173,24 @@ static void port_set_pwm_int(int pn,int pwm) {
 // -1 full power reverse
 // +1 full power forwards
 // applying bias mapping and then power limit
+// called for each port (unless coasting) at a rate determined by PWM_UPDATE
 void port_set_pwm(int p,float pwm) {
-  int u;
+  int u,v,s;
   CLAMP(pwm,-1,1);
   u=((int)(pwm*131072)+1)/2; // rounded Q16
-  if(u>0) u+=portinfo[p].bias;
-  if(u<0) u-=portinfo[p].bias;
-  CLAMP(u,-pwm_drive_limit,pwm_drive_limit);
-  u=(u*PWM_PERIOD+PWM_PERIOD/2)>>16; // map to ±PWM_PERIOD
-  port_set_pwm_int(p,u);
+  if(u<0) u=-u,s=1;
+  else         s=0;
+  if(u>=portinfo[p].bias) v=u;
+  else {
+    portinfo[p].biasacc+=u;
+    if(portinfo[p].biasacc>=portinfo[p].bias) v=portinfo[p].bias;
+    else                                      v=0;
+    portinfo[p].biasacc-=v;
+    }
+  if(s) v=-v;
+  CLAMP(v,-pwm_drive_limit,pwm_drive_limit);
+  v=(v*PWM_PERIOD+PWM_PERIOD/2)>>16; // map to ±PWM_PERIOD
+  port_set_pwm_int(p,v);
   }
 
 void port_motor_coast(int pn) {
@@ -197,6 +206,7 @@ void port_initpwm(int pn) {
   q->coast=0;
   q->lastpwm=0x7fffffff; // dummy value
   q->bias=0;
+  q->biasacc=0;
   q->setpoint=0;
   q->spwaveshape=WAVE_SQUARE;
   q->spwavemin=0;

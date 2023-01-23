@@ -90,6 +90,7 @@ case WAVE_RAMP:
   p->setpoint=u;
   }
 
+// this function is called for each port at a rate determined byw PWM_UPDATE
 void proc_pwm(int pn) {
   struct portinfo*p=portinfo+pn;
   struct devinfo*d=devinfo+pn;
@@ -117,7 +118,7 @@ void proc_pwm(int pn) {
 
 DEB_PID { o1ch('P'); o1hex(pn); ostr(": pv="); ostr(sfloat(p->pid_pv)); ostr(" sp="); ostr(sfloat(p->setpoint)); }
   err=p->pid_pv-p->setpoint;
-  if(err<0.01&&err>-0.01) err=0;                   // dead zone
+  if(err<0.006&&err>-0.006) err=0;                   // dead zone, about 2° for a rotation sensor
   derr=(err-p->pid_perr)/(PWM_UPDATE/1000.0);      // derivative error
   p->pid_perr=err;
   p->pid_ierr+=err*(PWM_UPDATE/1000.0);            // integral error

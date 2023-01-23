@@ -29,6 +29,7 @@ extern struct portinfo {
   int coast;                                       // 1=coasting
   int lastpwm;                                     // integer value to which PWM was last set
   int bias;                                        // bias offset Q16
+  int biasacc;                                     // bias offset error accumulator Q16
   float setpoint;                                  // PID/direct PWM setpoint
   int spwaveshape;                                 // set point wave generator
   float spwavemin;
