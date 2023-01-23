@@ -63,10 +63,10 @@ void device_dump(int dn) {
   ostr("  position PID:"); for(i=0;i<4;i++) { osp(); o8hex(d->  pospid[i]); } onl();
   }
 
-int device_varfrommode(int port,int mode,int offset,int format,float scale,float unwrap,float*last,float*var) {
+int device_varfrommode(int port,int mode,int offset,int format,float scale,float unwrap,int diff,float*last,float*var) {
   char buf[4];
   int i;
-  float v;
+  float v,dv;
   struct devinfo*dvp;
 
   if(port<0||port>=NPORTS) return 0;
@@ -84,22 +84,25 @@ case 0x204: v=       *(         float*)buf; break;
 default:    v=0;
     }
   v*=scale;
-  if(unwrap!=0&&*last<1e38) {                    // unwrapping and we have a valid "last" reading?
-    float dv=v-*last;                            // subtract consecutive sensor readings
-    if(dv> unwrap/2) dv-=unwrap;                 // normalise increment to ±0.5 of wrap range...
-    if(dv<-unwrap/2) dv+=unwrap;
-    *var+=dv;                                       // ... and change by that amount
-    *last=v;
-    return 1;
-    }
-  *var=v;
+  if(*last<1e38) dv=v-*last;                     // subtract consecutive sensor readings
+  else           dv=0;
   *last=v;
+  if(unwrap!=0) {                                // unwrapping?
+    if(dv> unwrap/2) dv-=unwrap;                 // normalise increment to ±0.5 of wrap range
+    if(dv<-unwrap/2) dv+=unwrap;
+    }
+  if(diff)
+    *var=dv*PWM_UPDATE;
+  else if(unwrap!=0)
+    *var+=dv;
+  else
+    *var=v;
   return 1;
   }
 
 void device_dumpmodevar(int port,int mode,int offset,int format) {
   float v;
-  if(device_varfrommode(port,mode,offset,format,1,0,0,&v)==0) return;
+  if(device_varfrommode(port,mode,offset,format,1,0,0,0,&v)==0) return;
   o1ch('P'); o1hex(port); ostr("V: "); ostrnl(sfloat(v));
   }
 

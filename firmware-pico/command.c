@@ -30,6 +30,7 @@ static void cmd_help() {
   ostrnl("  off                  : same as pwm ; set 0");
   ostrnl("  on                   : same as pwm ; set 1");
   ostrnl("  pid <pidparams>      : set current port to PID control mode with <pidparams>");
+  ostrnl("  pid_diff <pidparams> : set current port to PID control mode with <pidparams> and differentiator on process variable");
   ostrnl("  set <setpoint>       : configure constant set point for current port");
   ostrnl("  set <waveparams>     : configure varying set point for current port");
   ostrnl("  bias <bias>          : set bias offset for motor drive on current port (default 0)");
@@ -121,7 +122,7 @@ static int cmd_pwm()  {
   portinfo[cmdport].coast=0;
   return 0;
   }
-static int cmd_pid()  {
+static int cmd_pid(int diff)  {
   unsigned int u;
   float v;
   int w;
@@ -136,7 +137,7 @@ static int cmd_pid()  {
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Ki=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kd=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].windup=v;
-  portinfo[cmdport].pwmmode=1;                     // enable PID controller and trigger messages from device providing process variable
+  portinfo[cmdport].pwmmode=diff?2:1;                      // enable PID controller and trigger messages from device providing process variable
   portinfo[cmdport].coast=0;
   return 0;
 err:
@@ -339,7 +340,8 @@ void proc_cmd() {
     else if(strmatch("pwm"          )) { if(cmd_pwm())           goto err; }
     else if(strmatch("coast"        )) { if(cmd_coast())         goto err; }
 //!!!    else if(strmatch("pwmfreq" )) { if(cmd_pwmfreq())       goto err; }
-    else if(strmatch("pid"          )) { if(cmd_pid())           goto err; }
+    else if(strmatch("pid"          )) { if(cmd_pid(0))          goto err; }
+    else if(strmatch("pid_diff"     )) { if(cmd_pid(1))          goto err; }
     else if(strmatch("set"          )) { if(cmd_set())           goto err; }
     else if(strmatch("off"          )) { if(cmd_off())           goto err; }
     else if(strmatch("on"           )) { if(cmd_on())            goto err; }

@@ -7,6 +7,8 @@
 
 #define DEFAULT_SELREPRATE 100
 
+#define PWM_UPDATE 10                              // in milliseconds
+
 extern int pwm_drive_limit;
 
 extern struct portinfo {
@@ -25,7 +27,7 @@ extern struct portinfo {
   int selrxever;                                   // have we ever received a message for this mode since selecting it?
   int selreprate;                                  // report rate for select messages: -2: disabled; -1: once only; 0: as received; ≥1: target interval between reports in ms
 
-  int pwmmode;                                     // 0=direct PWM, 1=PID controlled
+  int pwmmode;                                     // 0=direct PWM, 1=PID controlled, 2=PID controlled with differentiator on process variable
   int coast;                                       // 1=coasting
   int lastpwm;                                     // integer value to which PWM was last set
   int bias;                                        // bias offset Q16

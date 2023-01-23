@@ -21,6 +21,10 @@
 
 // port 2 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; bias .6 ; pid 2 0 5 s2    0.0027777778 1    10 0.0 0.3   3
 
+
+
+// port 0 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; bias .6 ; pid_diff 0 0 5 s2    0.0027777778 1    0 25 0   .04
+
 #include <string.h>
 #include "common.h"
 #include "debug.h"
