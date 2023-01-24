@@ -178,6 +178,7 @@ void port_set_pwm(int p,float pwm) {
   int u,v;
   CLAMP(pwm,-1,1);
   u=((int)(pwm*131072)+1)/2; // rounded Q16
+//  if(ABS(u)<65) u=0; // don't try to generate PWM < 0.001
   if(ABS(u)>=portinfo[p].bias) v=u;    // if above slow/fast PWM switchover threshold, send value directly to PWM driver
   else {
     portinfo[p].biasacc+=u;            // enable PWM drivers at the threshold level at the correct average rate ("slow PWM")

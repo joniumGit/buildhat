@@ -92,7 +92,7 @@ default:    v=0;
     if(dv<-unwrap/2) dv+=unwrap;
     }
   if(diff)
-    *var=dv*PWM_UPDATE;
+    *var=dv*(1000.0/PWM_UPDATE);
   else if(unwrap!=0)
     *var+=dv;
   else
