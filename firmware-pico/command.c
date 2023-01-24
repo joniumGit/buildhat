@@ -33,6 +33,7 @@ static void cmd_help() {
   ostrnl("  set <setpoint>       : configure constant set point for current port");
   ostrnl("  set <waveparams>     : configure varying set point for current port");
   ostrnl("  bias <bias>          : set bias offset for motor drive on current port (default 0)");
+  ostrnl("  port_plimit <limit>  : set PWM output drive limit for current port (default 0.1) after bias mapping");
   ostrnl("  plimit <limit>       : set PWM output drive limit for all ports (default 0.1) after bias mapping");
   ostrnl("  select <selvar>      : send a SELECT message to select a variable and output it");
   ostrnl("  select <selmode>     : send a SELECT message to select a mode and output all its data in raw hex");
@@ -196,13 +197,25 @@ static int cmd_debug()       { return !parseint(&debug); }
 //  port_driverdump(pn);
 //  return 0;
 //  }
+
 static int cmd_plimit()      {
+  float u;
+  int i;
+  if(!parsefloat(&u)) return 1;
+  CLAMP(u,0,1);
+  for(i=0;i<NPORTS;i++)
+    portinfo[i].pwm_drive_limit=(int)(u*65536+0.5); // Q16
+  return 0;
+  }
+
+static int cmd_port_plimit()      {
   float u;
   if(!parsefloat(&u)) return 1;
   CLAMP(u,0,1);
-  pwm_drive_limit=(int)(u*65536+0.5); // Q16
+  portinfo[cmdport].pwm_drive_limit=(int)(u*65536+0.5); // Q16
   return 0;
   }
+
 static int cmd_bias()        {
   float u;
   if(!parsefloat(&u)) return 1;
@@ -346,6 +359,7 @@ void proc_cmd() {
     else if(strmatch("vin"          )) { if(cmd_vin())           goto err; }
     else if(strmatch("bias"         )) { if(cmd_bias())          goto err; }
     else if(strmatch("plimit"       )) { if(cmd_plimit())        goto err; }
+    else if(strmatch("port_plimit"  )) { if(cmd_port_plimit())   goto err; }
     else if(strmatch("select"       )) { if(cmd_select(0))       goto err; }
     else if(strmatch("selonce"      )) { if(cmd_select(1))       goto err; }
     else if(strmatch("selrate"      )) { if(cmd_selrate())       goto err; }

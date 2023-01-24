@@ -7,8 +7,6 @@
 
 #define DEFAULT_SELREPRATE 100
 
-extern int pwm_drive_limit;
-
 extern struct portinfo {
   unsigned int lasttick;                           // tick when last character seen
   volatile int mstate;                             // message reading state
@@ -26,6 +24,7 @@ extern struct portinfo {
   int selreprate;                                  // report rate for select messages: -2: disabled; -1: once only; 0: as received; ≥1: target interval between reports in ms
 
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled
+  int pwm_drive_limit;                             // maximum PWM drive allowed on this port
   int coast;                                       // 1=coasting
   int lastpwm;                                     // integer value to which PWM was last set
   int bias;                                        // bias offset Q16
