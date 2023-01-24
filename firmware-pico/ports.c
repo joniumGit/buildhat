@@ -175,19 +175,17 @@ static void port_set_pwm_int(int pn,int pwm) {
 // applying bias mapping and then power limit
 // called for each port (unless coasting) at a rate determined by PWM_UPDATE
 void port_set_pwm(int p,float pwm) {
-  int u,v,s;
+  int u,v;
   CLAMP(pwm,-1,1);
   u=((int)(pwm*131072)+1)/2; // rounded Q16
-  if(u<0) u=-u,s=1;
-  else         s=0;
-  if(u>=portinfo[p].bias) v=u;
+  if(ABS(u)>=portinfo[p].bias) v=u;    // if above slow/fast PWM switchover threshold, send value directly to PWM driver
   else {
-    portinfo[p].biasacc+=u;
-    if(portinfo[p].biasacc>=portinfo[p].bias) v=portinfo[p].bias;
-    else                                      v=0;
+    portinfo[p].biasacc+=u;            // enable PWM drivers at the threshold level at the correct average rate ("slow PWM")
+    if     (portinfo[p].biasacc>= portinfo[p].bias) v= portinfo[p].bias;
+    else if(portinfo[p].biasacc<=-portinfo[p].bias) v=-portinfo[p].bias;
+    else                                            v=0;
     portinfo[p].biasacc-=v;
     }
-  if(s) v=-v;
   CLAMP(v,-pwm_drive_limit,pwm_drive_limit);
   v=(v*PWM_PERIOD+PWM_PERIOD/2)>>16; // map to ±PWM_PERIOD
   port_set_pwm_int(p,v);
