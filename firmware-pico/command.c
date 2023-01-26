@@ -92,6 +92,7 @@ static int parsesv(struct svar*sv) { // parse a "scaled variable" specification
   unsigned int u;
   float v;
   int w;
+  sv->last=1.1e38;
   if(!parseuint(&u))  goto err; CLAMP(u,0,NPORTS-1);    sv->port=u;
   if(!parseuint(&u))  goto err; CLAMP(u,0,MAXNMODES-1); sv->mode=u;
   if(!parseuint(&u))  goto err; CLAMP(u,0,127);         sv->offset=u;

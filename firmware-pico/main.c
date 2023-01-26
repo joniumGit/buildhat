@@ -14,10 +14,10 @@
 // example for speed PID:
 // echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit .6 ; pwmparams .2 0; pid 0 0 0 s1 1 0 0.003 0.01 0 100 0.01 ; set 30
 // example speed PID for small motor:
-// plimit 1 ; pwmparams 0 0; pid 0 0 0 s1   1 0    0.01 0.02 0.0001   100 0.01 ; set 10
+// plimit 1 ; pwmparams 0.6 0 ; pid 0 0 0 s1   1 0    0.01 0.02 0.0001   100 0.01 ; set 10
 
 // another example position PID for small motor:
-// port 0 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0; pid 0 0 5 s2    0.0027777778 1    10 0.0 0.2   3 0.01
+// port 0 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0; pid 0 0 5 s2    0.0027777778 1    5 0.0 0.2   3 0.01
 
 // port 2 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0; pid 2 0 5 s2    0.0027777778 1    10 0.0 0.3   3 0.01
 
