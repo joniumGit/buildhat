@@ -5,5 +5,6 @@
 #define WAVE_TRI 2
 #define WAVE_PULSE 3
 #define WAVE_RAMP 4
+#define WAVE_VAR 5 // special value for set point derived from a variable
 
 extern void proc_pwm(int pn);

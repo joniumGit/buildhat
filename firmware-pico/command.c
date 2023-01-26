@@ -1,6 +1,7 @@
 // Accept, parse and process commands received over the control port UART
 
 #include "common.h"
+#include "control.h"
 #include "hardware.h"
 #include "ports.h"
 #include "device.h"
@@ -133,9 +134,7 @@ static int cmd_pwm()  {
   return 0;
   }
 static int cmd_pid(int diff)  {
-  unsigned int u;
   float v;
-  int w;
   portinfo[cmdport].setpoint=0;
   if(!parsesv(&portinfo[cmdport].pvsvar)) goto err;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kp=v;
@@ -177,7 +176,8 @@ static int cmd_set_wave(int shape) {
   return 0;
   }
 static int cmd_set_var() {
-  // ... !!!
+  if(!parsesv(&portinfo[cmdport].spsvar)) return 1;
+  portinfo[cmdport].spwaveshape=WAVE_VAR;
   return 0;
   }
 static int cmd_set()  {

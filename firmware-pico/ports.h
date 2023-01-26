@@ -50,6 +50,7 @@ extern struct portinfo {
   float spwaveperiod;
   float spwavephase;
   float spwavephaseacc;
+  struct svar spsvar;                              // variable used for setpoint (if any)
   float pid_pv;                                    // PID process variable
   float pid_ierr;                                  // PID integral error accumulator
   float pid_perr;                                  // PID previous error

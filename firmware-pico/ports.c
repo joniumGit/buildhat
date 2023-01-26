@@ -198,6 +198,16 @@ void port_motor_coast(int pn) {
   portinfo[pn].lastpwm=0x7fffffff;
   }
 
+static void initsvar(struct svar*sv) {
+  sv->port=0;
+  sv->mode=0;
+  sv->offset=0;
+  sv->format=0;
+  sv->scale=0;
+  sv->unwrap=0;
+  sv->last=1.1e38; // values overr 1e38 flag that there is no valid "last" reading
+  }
+
 void port_initpwm(int pn) {
   struct portinfo*q=portinfo+pn;
   port_set_pwm_int(pn,0);
@@ -217,13 +227,8 @@ void port_initpwm(int pn) {
   q->pid_pv=0;
   q->pid_ierr=0;
   q->pid_perr=0;
-  q->pvsvar.port=0;
-  q->pvsvar.mode=0;
-  q->pvsvar.offset=0;
-  q->pvsvar.format=0;
-  q->pvsvar.scale=0;
-  q->pvsvar.unwrap=0;
-  q->pvsvar.last=1.1e38; // values overr 1e38 flag that there is no valid "last" reading
+  initsvar(&q->pvsvar);
+  initsvar(&q->spsvar);
   q->Kp=0;
   q->Ki=0;
   q->Kd=0;

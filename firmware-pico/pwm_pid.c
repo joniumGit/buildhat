@@ -47,6 +47,10 @@ static void getsetpoint(int pn) {
   float u;
   int i;
 
+  if(p->spwaveshape==WAVE_VAR) {
+    device_getsvar(&p->spsvar,0,&p->setpoint);
+    return;
+    }
   u=p->spwavephaseacc+(PWM_UPDATE/1000.0);
   if(u>=p->spwaveperiod) {
     u-=p->spwaveperiod;
