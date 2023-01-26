@@ -51,6 +51,7 @@ extern struct portinfo {
   float pvunwrap;
   float Kp,Ki,Kd;                                  // PID coefficients Q16
   float windup;                                    // windup limit for integral error
+  float deadzone;                                  // ± dead zone for error
   } portinfo[NPORTS];
 
 extern struct message {

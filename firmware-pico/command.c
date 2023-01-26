@@ -57,13 +57,14 @@ static void cmd_help() {
   ostr  ("  <port>               : 0.."); odec(NPORTS-1); onl();
   ostrnl("  <ledmode>            : 0=off 1=orange 2=green 3=orange+green –1=monitor Vin (default)");
   ostrnl("  <setpoint>           : –1..+1 for direct PWM; unrestricted for PID control");
-  ostrnl("  <pidparams>          : <pvar> <Kp> <Ki> <Kd> <windup>");
+  ostrnl("  <pidparams>          : <pvar> <Kp> <Ki> <Kd> <windup> <deadzone>");
   ostrnl("    <pvar>             : <pvport> <var> <pvscale> <pvunwrap>");
   ostrnl("      <pvport>         : port to fetch process variable from");
   ostrnl("      <pvscale>        : process variable multiplicative scale factor");
   ostrnl("      <pvunwrap>       : 0=no unwrapping; otherwise modulo for process variable phase unwrap");
   ostrnl("    <Kp>, <Ki>, <Kd>   : PID controller gains (Δt=1s)");
   ostrnl("    <windup>           : PID integral windup limit");
+  ostrnl("    <deadzone>         : PID dead zone");
   ostrnl("  <waveparams>         : square   <min> <max> <period> <phase>");
   ostrnl("                       | sine     <min> <max> <period> <phase>");
   ostrnl("                       | triangle <min> <max> <period> <phase>");
@@ -129,7 +130,8 @@ static int cmd_pid(int diff)  {
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Ki=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kd=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].windup=v;
-  portinfo[cmdport].pwmmode=diff?2:1;                      // enable PID controller and trigger messages from device providing process variable
+  if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].deadzone=v;
+  portinfo[cmdport].pwmmode=diff?2:1;                      // enable PID controller
   portinfo[cmdport].coast=0;
   return 0;
 err:
