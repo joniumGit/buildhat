@@ -34,7 +34,11 @@ port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0
 # pid control for M0 using own position sensor as process variable
 pid 0 0 5 s2    0.0027777778 1    5 0.0 0.2   3 0.01
 # and M1's position sensor as setpoint
-set var 1 0 5 s2    0.0027777778 1
+set var -999999999 999999999 1 0   1 0 5 s2    0.0027777778 1
+
+# or with 2:1 gearing
+set var -999999999 999999999 1 0   1 0 5 s2    0.0055555555 2
+
 
 example to have position of motor 1 control speed of motor 0:
 echo 1
@@ -44,7 +48,7 @@ port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0
 # pid control for M0 using derivative of own position sensor as process variable
 pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
 # and M1's position sensor as setpoint
-set var 1 0 5 s2    0.02 0
+set var -999999999 999999999 1 0   1 0 5 s2    0.02 0
 
 
 */

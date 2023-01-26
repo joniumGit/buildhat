@@ -48,7 +48,10 @@ static void getsetpoint(int pn) {
   int i;
 
   if(p->spwaveshape==WAVE_VAR) {
-    device_getsvar(&p->spsvar,0,&p->setpoint);
+    device_getsvar(&p->spsvar,0,&p->spwavephaseacc); // use spwavephaseacc to hold the variable before applying the scale function
+    u=(p->spwavephaseacc-p->spwavephase)*p->spwaveperiod;
+    CLAMP(u,p->spwavemin,p->spwavemax);
+    p->setpoint=u;
     return;
     }
   u=p->spwavephaseacc+(PWM_UPDATE/1000.0);

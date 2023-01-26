@@ -67,7 +67,8 @@ static void cmd_help() {
   ostrnl("                        | triangle <min> <max> <period> <phase>");
   ostrnl("                        | pulse    <during> <after> <length> 0");
   ostrnl("                        | ramp     <from> <to> <duration> 0");
-  ostrnl("                        | var      <svar>");
+  ostrnl("                        | var      <varmap> <svar>");
+  ostrnl("  <varmap>              : <min> <max> <slope> <offset>");
   ostrnl("  <pwmparams>           : <pwmthresh> <minpwm>");
   ostrnl("    <pwmthresh>         : threshold for slow/fast PWM switchover (default 0)");
   ostrnl("    <minpwm>            : minimum PWM driver input value (default 0)");
@@ -175,11 +176,6 @@ static int cmd_set_wave(int shape) {
   portinfo[cmdport].coast=0;
   return 0;
   }
-static int cmd_set_var() {
-  if(!parsesv(&portinfo[cmdport].spsvar)) return 1;
-  portinfo[cmdport].spwaveshape=WAVE_VAR;
-  return 0;
-  }
 static int cmd_set()  {
   float u;
   if(strmatch("square"))   return cmd_set_wave(WAVE_SQUARE);
@@ -187,7 +183,11 @@ static int cmd_set()  {
   if(strmatch("triangle")) return cmd_set_wave(WAVE_TRI);
   if(strmatch("pulse"))    return cmd_set_wave(WAVE_PULSE);
   if(strmatch("ramp"))     return cmd_set_wave(WAVE_RAMP);
-  if(strmatch("var"))      return cmd_set_var();
+  if(strmatch("var")) {
+    if(cmd_set_wave(WAVE_VAR)) return 1;
+    if(!parsesv(&portinfo[cmdport].spsvar)) return 1;
+    return 0;
+    }
   if(!parsefloat(&u)) return 1;
   cmd_set_const(u);
   return 0;
