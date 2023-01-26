@@ -248,23 +248,8 @@ set ramp 1 2 1 0
 coast
 set ramp 2 1 1 0
 
+Changes in PID_experimental
+===========================
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Mandatory "deadzone" PID parameter
 
