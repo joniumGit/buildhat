@@ -21,9 +21,11 @@
 
 // port 2 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0; pid 2 0 5 s2    0.0027777778 1    10 0.0 0.3   3 0.01
 
-// speed control by differentiating position reading
-// port 0 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0.05
-// pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
+/*
+speed control by differentiating position reading
+port 0 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0.05
+pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
+*/
 
 #include <string.h>
 #include "common.h"
