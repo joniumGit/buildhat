@@ -57,11 +57,7 @@ static void cmd_help() {
   ostr  ("  <port>                : 0.."); odec(NPORTS-1); onl();
   ostrnl("  <ledmode>             : 0=off 1=orange 2=green 3=orange+green –1=monitor Vin (default)");
   ostrnl("  <setpoint>            : –1..+1 for direct PWM; unrestricted for PID control");
-  ostrnl("  <pidparams>           : <pvar> <Kp> <Ki> <Kd> <windup> <deadzone>");
-  ostrnl("    <pvar>              : <pvport> <var> <pvscale> <pvunwrap>");
-  ostrnl("      <pvport>          : port to fetch process variable from");
-  ostrnl("      <pvscale>         : process variable multiplicative scale factor");
-  ostrnl("      <pvunwrap>        : 0=no unwrapping; otherwise modulo for process variable phase unwrap");
+  ostrnl("  <pidparams>           : <svar> <Kp> <Ki> <Kd> <windup> <deadzone>");
   ostrnl("    <Kp>, <Ki>, <Kd>    : PID controller gains (Δt=1s)");
   ostrnl("    <windup>            : PID integral windup limit");
   ostrnl("    <deadzone>          : PID dead zone");
@@ -70,10 +66,14 @@ static void cmd_help() {
   ostrnl("                        | triangle <min> <max> <period> <phase>");
   ostrnl("                        | pulse    <during> <after> <length> 0");
   ostrnl("                        | ramp     <from> <to> <duration> 0");
+  ostrnl("                        | var      <svar>");
   ostrnl("  <pwmparams>           : <pwmthresh> <minpwm>");
   ostrnl("    <pwmthresh>         : threshold for slow/fast PWM switchover (default 0)");
   ostrnl("    <minpwm>            : minimum PWM driver input value (default 0)");
   ostrnl("  <limit>               : 0..1 as fraction of maximum PWM drive");
+  ostrnl("  <svar>                : <port> <var> <scale> <unwrap>");
+  ostrnl("    <scale>             : multiplicative scale factor");
+  ostrnl("    <unwrap>            : 0=no unwrapping; otherwise modulo for phase unwrap");
   ostrnl("  <var>                 : <mode> <offset> <format>");
   ostrnl("    <mode>              : mode to fetch variable from");
   ostrnl("    <offset>            : variable byte offset into mode");
@@ -88,6 +88,20 @@ static void cmd_help() {
   ostrnl("                          8=DATA payload; 16=PID controller; 32=unknown messages");
   }
 
+static int parsesv(struct svar*sv) { // parse a "scaled variable" specification
+  unsigned int u;
+  float v;
+  int w;
+  if(!parseuint(&u))  goto err; CLAMP(u,0,NPORTS-1);    sv->port=u;
+  if(!parseuint(&u))  goto err; CLAMP(u,0,MAXNMODES-1); sv->mode=u;
+  if(!parseuint(&u))  goto err; CLAMP(u,0,127);         sv->offset=u;
+  if(!parsefmt(&w))   goto err;                         sv->format=w;
+  if(!parsefloat(&v)) goto err; CLAMP(u,-32,32);        sv->scale=v;
+  if(!parsefloat(&v)) goto err;                         sv->unwrap=v;
+  return 1;
+err:
+  return 0;
+  }
 static int cmd_port() {
   unsigned int u;
   if(!parseuint(&u)) return 1;
@@ -122,12 +136,7 @@ static int cmd_pid(int diff)  {
   float v;
   int w;
   portinfo[cmdport].setpoint=0;
-  if(!parseuint(&u))  goto err; CLAMP(u,0,NPORTS-1);                       portinfo[cmdport].pvport=u;
-  if(!parseuint(&u))  goto err; CLAMP(u,0,MAXNMODES-1);                    portinfo[cmdport].pvmode=u;
-  if(!parseuint(&u))  goto err; CLAMP(u,0,127);                            portinfo[cmdport].pvoffset=u;
-  if(!parsefmt(&w))   goto err;                                            portinfo[cmdport].pvformat=w;
-  if(!parsefloat(&v)) goto err; CLAMP(u,-32,32);                           portinfo[cmdport].pvscale=v;
-  if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].pvunwrap=v;
+  if(!parsesv(&portinfo[cmdport].pvsvar)) goto err;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kp=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Ki=v;
   if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kd=v;
@@ -166,6 +175,10 @@ static int cmd_set_wave(int shape) {
   portinfo[cmdport].coast=0;
   return 0;
   }
+static int cmd_set_var() {
+  // ... !!!
+  return 0;
+  }
 static int cmd_set()  {
   float u;
   if(strmatch("square"))   return cmd_set_wave(WAVE_SQUARE);
@@ -173,6 +186,7 @@ static int cmd_set()  {
   if(strmatch("triangle")) return cmd_set_wave(WAVE_TRI);
   if(strmatch("pulse"))    return cmd_set_wave(WAVE_PULSE);
   if(strmatch("ramp"))     return cmd_set_wave(WAVE_RAMP);
+  if(strmatch("var"))      return cmd_set_var();
   if(!parsefloat(&u)) return 1;
   cmd_set_const(u);
   return 0;

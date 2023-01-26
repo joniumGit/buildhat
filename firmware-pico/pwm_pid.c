@@ -113,8 +113,7 @@ void proc_pwm(int pn) {
     }
 
 // here we are in PID controller mode: first try to extract the process variable
-  if(device_varfrommode(p->pvport,p->pvmode,p->pvoffset,p->pvformat,
-                           p->pvscale,p->pvunwrap,p->pwmmode==2,&p->pid_pv_last,&p->pid_pv)==0) return;
+  if(device_getsvar(&p->pvsvar,p->pwmmode==2,&p->pid_pv)==0) return;
 
 DEB_PID { o1ch('P'); o1hex(pn); ostr(": pv="); ostr(sfloat(p->pid_pv)); ostr(" sp="); ostr(sfloat(p->setpoint)); }
   err=p->pid_pv-p->setpoint;

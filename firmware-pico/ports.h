@@ -11,6 +11,16 @@
 
 extern int pwm_drive_limit;
 
+struct svar {
+  unsigned int port;
+  unsigned int mode;
+  unsigned int offset;
+  unsigned int format;
+  float scale;
+  float unwrap;
+  float last;
+  };
+
 extern struct portinfo {
   unsigned int lasttick;                           // tick when last character seen
   volatile int mstate;                             // message reading state
@@ -41,15 +51,9 @@ extern struct portinfo {
   float spwavephase;
   float spwavephaseacc;
   float pid_pv;                                    // PID process variable
-  float pid_pv_last;                               // previous value of process variable as read from sensor
   float pid_ierr;                                  // PID integral error accumulator
   float pid_perr;                                  // PID previous error
-  unsigned int pvport;
-  unsigned int pvmode;
-  unsigned int pvoffset;
-  unsigned int pvformat;
-  float pvscale;
-  float pvunwrap;
+  struct svar pvsvar;
   float Kp,Ki,Kd;                                  // PID coefficients Q16
   float windup;                                    // windup limit for integral error
   float deadzone;                                  // ± dead zone for error
