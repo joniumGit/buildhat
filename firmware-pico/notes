@@ -252,4 +252,4 @@ Changes in PID_experimental
 ===========================
 
 Mandatory "deadzone" PID parameter
-
+Split out PWM params; renamed bias and added minpwm

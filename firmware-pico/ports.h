@@ -30,8 +30,9 @@ extern struct portinfo {
   int pwmmode;                                     // 0=direct PWM, 1=PID controlled, 2=PID controlled with differentiator on process variable
   int coast;                                       // 1=coasting
   int lastpwm;                                     // integer value to which PWM was last set
-  int bias;                                        // bias offset Q16
-  int biasacc;                                     // bias offset error accumulator Q16
+  int pwmthresh;                                   // slow/fast PWM switchover thresholed Q16
+  int pwmthreshacc;                                // slow PWM error accumulator Q16
+  int minpwm;                                      // minimum PWM driver input value
   float setpoint;                                  // PID/direct PWM setpoint
   int spwaveshape;                                 // set point wave generator
   float spwavemin;

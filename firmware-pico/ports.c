@@ -172,20 +172,20 @@ static void port_set_pwm_int(int pn,int pwm) {
 // set PWM values according to pwm:
 // -1 full power reverse
 // +1 full power forwards
-// applying bias mapping and then power limit
+// applying pwmthresh mapping and then power limit
 // called for each port (unless coasting) at a rate determined by PWM_UPDATE
 void port_set_pwm(int p,float pwm) {
   int u,v;
   CLAMP(pwm,-1,1);
   u=((int)(pwm*131072)+1)/2; // rounded Q16
-//  if(ABS(u)<65) u=0; // don't try to generate PWM < 0.001
-  if(ABS(u)>=portinfo[p].bias) v=u;    // if above slow/fast PWM switchover threshold, send value directly to PWM driver
+  if(ABS(u)<portinfo[p].minpwm) u=0; // don't try to generate tiny PWM values
+  if(ABS(u)>=portinfo[p].pwmthresh) v=u;    // if above slow/fast PWM switchover threshold, send value directly to PWM driver
   else {
-    portinfo[p].biasacc+=u;            // enable PWM drivers at the threshold level at the correct average rate ("slow PWM")
-    if     (portinfo[p].biasacc>= portinfo[p].bias) v= portinfo[p].bias;
-    else if(portinfo[p].biasacc<=-portinfo[p].bias) v=-portinfo[p].bias;
+    portinfo[p].pwmthreshacc+=u;            // enable PWM drivers at the threshold level at the correct average rate ("slow PWM")
+    if     (portinfo[p].pwmthreshacc>= portinfo[p].pwmthresh) v= portinfo[p].pwmthresh;
+    else if(portinfo[p].pwmthreshacc<=-portinfo[p].pwmthresh) v=-portinfo[p].pwmthresh;
     else                                            v=0;
-    portinfo[p].biasacc-=v;
+    portinfo[p].pwmthreshacc-=v;
     }
   CLAMP(v,-pwm_drive_limit,pwm_drive_limit);
   v=(v*PWM_PERIOD+PWM_PERIOD/2)>>16; // map to ±PWM_PERIOD
@@ -204,8 +204,9 @@ void port_initpwm(int pn) {
   q->pwmmode=0;
   q->coast=0;
   q->lastpwm=0x7fffffff; // dummy value
-  q->bias=0;
-  q->biasacc=0;
+  q->pwmthresh=0;
+  q->pwmthreshacc=0;
+  q->minpwm=0;
   q->setpoint=0;
   q->spwaveshape=WAVE_SQUARE;
   q->spwavemin=0;
@@ -227,6 +228,7 @@ void port_initpwm(int pn) {
   q->Ki=0;
   q->Kd=0;
   q->windup=0;
+  q->deadzone=0;
   }
 
 // GPIO5 -> b0, GPIO6 -> b1

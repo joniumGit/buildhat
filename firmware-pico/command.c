@@ -19,71 +19,73 @@ static int cmdport=0;                                     // current port affect
 
 static void cmd_help() {
   ostrnl("Commands available:");
-  ostrnl("  help, ?              : display this text");
-  ostrnl("  port <port>          : select a port (default 0)");
-  ostrnl("  list                 : list connected devices");
-  ostrnl("  vin                  : report main power input voltage");
-  ostrnl("  ledmode <ledmode>    : set LED function");
-  ostrnl("  clear_faults         : clear latched motor fault conditions");
-  ostrnl("  coast                : disable motor driver");
-  ostrnl("  pwm                  : set current port to direct PWM mode (default)");
-  ostrnl("  off                  : same as pwm ; set 0");
-  ostrnl("  on                   : same as pwm ; set 1");
-  ostrnl("  pid <pidparams>      : set current port to PID control mode with <pidparams>");
-  ostrnl("  pid_diff <pidparams> : set current port to PID control mode with <pidparams> and differentiator on process variable");
-  ostrnl("  set <setpoint>       : configure constant set point for current port");
-  ostrnl("  set <waveparams>     : configure varying set point for current port");
-  ostrnl("  bias <bias>          : set bias threshold for motor drive for slow/fast PWM switchover (default 0)");
-  ostrnl("  plimit <limit>       : set PWM output drive limit for all ports (default 0.1)");
-  ostrnl("  select <var>         : send a SELECT message to select a variable and output it");
-  ostrnl("  select <mode>        : send a SELECT message to select a mode and output all its data in raw hex");
-  ostrnl("  select               : stop outputting data");
-  ostrnl("  selonce <var>        : as 'select' but only report one data packet");
-  ostrnl("  selonce <mode>       : as 'select' but only report one data packet");
-  ostrnl("  selrate <rate>       : set reporting period (use after 'select')");
-  ostrnl("  combi <index> <clist>: configure a combi mode with a list of mode/dataset specifiers");
-  ostrnl("  combi <index>        : de-configure a combi mode");
-//  ostrnl("  accelerometer        : read accelerometer data once");
-  ostrnl("  write1 <hexbyte>*    : send message with 1-byte header; pads if necessary, sets payload length and checksum");
-  ostrnl("  write2 <hexbyte>*    : send message with 2-byte header; pads if necessary, sets payload length and checksum");
-  ostrnl("  echo <0|1>           : enable/disable echo and prompt on command port");
-  ostrnl("  debug <debugcode>    : enable debugging output");
-//  ostrnl("  driverdump <port>: dump driver data");
-  ostrnl("  version              : print version string");
-  ostrnl("  signature            : dump firmware signature");
+  ostrnl("  help, ?               : display this text");
+  ostrnl("  port <port>           : select a port (default 0)");
+  ostrnl("  list                  : list connected devices");
+  ostrnl("  vin                   : report main power input voltage");
+  ostrnl("  ledmode <ledmode>     : set LED function");
+  ostrnl("  clear_faults          : clear latched motor fault conditions");
+  ostrnl("  coast                 : disable motor driver");
+  ostrnl("  pwm                   : set current port to direct PWM mode (default)");
+  ostrnl("  off                   : same as pwm ; set 0");
+  ostrnl("  on                    : same as pwm ; set 1");
+  ostrnl("  pid <pidparams>       : set current port to PID control mode with <pidparams>");
+  ostrnl("  pid_diff <pidparams>  : set current port to PID control mode with <pidparams> and differentiator on process variable");
+  ostrnl("  set <setpoint>        : configure constant set point for current port");
+  ostrnl("  set <waveparams>      : configure varying set point for current port");
+  ostrnl("  pwmparams <pwmparams> : configure parameters for PWM driver");
+  ostrnl("  plimit <limit>        : set PWM output drive limit for all ports (default 0.1)");
+  ostrnl("  select <var>          : send a SELECT message to select a variable and output it");
+  ostrnl("  select <mode>         : send a SELECT message to select a mode and output all its data in raw hex");
+  ostrnl("  select                : stop outputting data");
+  ostrnl("  selonce <var>         : as 'select' but only report one data packet");
+  ostrnl("  selonce <mode>        : as 'select' but only report one data packet");
+  ostrnl("  selrate <rate>        : set reporting period (use after 'select')");
+  ostrnl("  combi <index> <clist> : configure a combi mode with a list of mode/dataset specifiers");
+  ostrnl("  combi <index>         : de-configure a combi mode");
+//  ostrnl("  accelerometer         : read accelerometer data once");
+  ostrnl("  write1 <hexbyte>*     : send message with 1-byte header; pads if necessary, sets payload length and checksum");
+  ostrnl("  write2 <hexbyte>*     : send message with 2-byte header; pads if necessary, sets payload length and checksum");
+  ostrnl("  echo <0|1>            : enable/disable echo and prompt on command port");
+  ostrnl("  debug <debugcode>     : enable debugging output");
+//  ostrnl("  driverdump <port>:  dump driver data");
+  ostrnl("  version               : print version string");
+  ostrnl("  signature             : dump firmware signature");
 //  ostrnl("  bootloader           : reset into bootloader");
   ostrnl("");
   ostrnl("Where:");
-  ostr  ("  <port>               : 0.."); odec(NPORTS-1); onl();
-  ostrnl("  <ledmode>            : 0=off 1=orange 2=green 3=orange+green –1=monitor Vin (default)");
-  ostrnl("  <setpoint>           : –1..+1 for direct PWM; unrestricted for PID control");
-  ostrnl("  <pidparams>          : <pvar> <Kp> <Ki> <Kd> <windup> <deadzone>");
-  ostrnl("    <pvar>             : <pvport> <var> <pvscale> <pvunwrap>");
-  ostrnl("      <pvport>         : port to fetch process variable from");
-  ostrnl("      <pvscale>        : process variable multiplicative scale factor");
-  ostrnl("      <pvunwrap>       : 0=no unwrapping; otherwise modulo for process variable phase unwrap");
-  ostrnl("    <Kp>, <Ki>, <Kd>   : PID controller gains (Δt=1s)");
-  ostrnl("    <windup>           : PID integral windup limit");
-  ostrnl("    <deadzone>         : PID dead zone");
-  ostrnl("  <waveparams>         : square   <min> <max> <period> <phase>");
-  ostrnl("                       | sine     <min> <max> <period> <phase>");
-  ostrnl("                       | triangle <min> <max> <period> <phase>");
-  ostrnl("                       | pulse    <during> <after> <length> 0");
-  ostrnl("                       | ramp     <from> <to> <duration> 0");
-  ostrnl("  <limit>              : 0..1 as fraction of maximum PWM drive");
-  ostrnl("  <bias>               : 0..1 set slow/fast PWM switchover threshold");
-  ostrnl("  <var>                : <mode> <offset> <format>");
-  ostrnl("    <mode>             : mode to fetch variable from");
-  ostrnl("    <offset>           : variable byte offset into mode");
-  ostrnl("    <format>           : u1=unsigned byte;  s1=signed byte;");
-  ostrnl("                         u2=unsigned short; s2=signed short;");
-  ostrnl("                         u4=unsigned int;   s4=signed int;");
-  ostrnl("                         f4=float");
-  ostrnl("  <rate>               : target interval between reports in ms; 0=as reported by device");
-  ostrnl("  <clist>              : {<mode> <dataset>}*");
-  ostrnl("  <hexbyte>            : 1- or 2-digit hex value");
-  ostrnl("  <debugcode>          : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
-  ostrnl("                         8=DATA payload; 16=PID controller; 32=unknown messages");
+  ostr  ("  <port>                : 0.."); odec(NPORTS-1); onl();
+  ostrnl("  <ledmode>             : 0=off 1=orange 2=green 3=orange+green –1=monitor Vin (default)");
+  ostrnl("  <setpoint>            : –1..+1 for direct PWM; unrestricted for PID control");
+  ostrnl("  <pidparams>           : <pvar> <Kp> <Ki> <Kd> <windup> <deadzone>");
+  ostrnl("    <pvar>              : <pvport> <var> <pvscale> <pvunwrap>");
+  ostrnl("      <pvport>          : port to fetch process variable from");
+  ostrnl("      <pvscale>         : process variable multiplicative scale factor");
+  ostrnl("      <pvunwrap>        : 0=no unwrapping; otherwise modulo for process variable phase unwrap");
+  ostrnl("    <Kp>, <Ki>, <Kd>    : PID controller gains (Δt=1s)");
+  ostrnl("    <windup>            : PID integral windup limit");
+  ostrnl("    <deadzone>          : PID dead zone");
+  ostrnl("  <waveparams>          : square   <min> <max> <period> <phase>");
+  ostrnl("                        | sine     <min> <max> <period> <phase>");
+  ostrnl("                        | triangle <min> <max> <period> <phase>");
+  ostrnl("                        | pulse    <during> <after> <length> 0");
+  ostrnl("                        | ramp     <from> <to> <duration> 0");
+  ostrnl("  <pwmparams>           : <pwmthresh> <minpwm>");
+  ostrnl("    <pwmthresh>         : threshold for slow/fast PWM switchover (default 0)");
+  ostrnl("    <minpwm>            : minimum PWM driver input value (default 0)");
+  ostrnl("  <limit>               : 0..1 as fraction of maximum PWM drive");
+  ostrnl("  <var>                 : <mode> <offset> <format>");
+  ostrnl("    <mode>              : mode to fetch variable from");
+  ostrnl("    <offset>            : variable byte offset into mode");
+  ostrnl("    <format>            : u1=unsigned byte;  s1=signed byte;");
+  ostrnl("                          u2=unsigned short; s2=signed short;");
+  ostrnl("                          u4=unsigned int;   s4=signed int;");
+  ostrnl("                          f4=float");
+  ostrnl("  <rate>                : target interval between reports in ms; 0=as reported by device");
+  ostrnl("  <clist>               : {<mode> <dataset>}*");
+  ostrnl("  <hexbyte>             : 1- or 2-digit hex value");
+  ostrnl("  <debugcode>           : OR of 1=serial port; 2=connect/disconnect; 4=signature;");
+  ostrnl("                          8=DATA payload; 16=PID controller; 32=unknown messages");
   }
 
 static int cmd_port() {
@@ -198,11 +200,14 @@ static int cmd_plimit()      {
   pwm_drive_limit=(int)(u*65536+0.5); // Q16
   return 0;
   }
-static int cmd_bias()        {
-  float u;
+static int cmd_pwmparams()        {
+  float u,v;
   if(!parsefloat(&u)) return 1;
+  if(!parsefloat(&v)) return 1;
   CLAMP(u,0,1);
-  portinfo[cmdport].bias=(int)(u*65536+0.5); // Q16
+  portinfo[cmdport].pwmthresh=(int)(u*65536+0.5); // Q16
+  CLAMP(v,0,1);
+  portinfo[cmdport].minpwm=(int)(v*65536+0.5); // Q16
   return 0;
   }
 static int cmd_select(int f) {        // f=0: normal mode; f=1 report value only once ("selonce" command)
@@ -340,7 +345,7 @@ void proc_cmd() {
     else if(strmatch("off"          )) { if(cmd_off())           goto err; }
     else if(strmatch("on"           )) { if(cmd_on())            goto err; }
     else if(strmatch("vin"          )) { if(cmd_vin())           goto err; }
-    else if(strmatch("bias"         )) { if(cmd_bias())          goto err; }
+    else if(strmatch("pwmparams"    )) { if(cmd_pwmparams())     goto err; }
     else if(strmatch("plimit"       )) { if(cmd_plimit())        goto err; }
     else if(strmatch("select"       )) { if(cmd_select(0))       goto err; }
     else if(strmatch("selonce"      )) { if(cmd_select(1))       goto err; }
