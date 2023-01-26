@@ -165,8 +165,10 @@ static int cmd_set_wave(int shape) {
   if(!parsefloat(&max))    return 1;
   if(!parsefloat(&period)) return 1;
   if(!parsefloat(&phase))  return 1;
-  CLAMP(period,2*PWM_UPDATE/1000.0,1e30);
-  CLAMP(phase,0,1);
+  if(shape!=WAVE_VAR) {
+    CLAMP(period,2*PWM_UPDATE/1000.0,1e30);
+    CLAMP(phase,0,1);
+    }
   portinfo[cmdport].spwaveshape   =shape;
   portinfo[cmdport].spwavemin     =min;
   portinfo[cmdport].spwavemax     =max;

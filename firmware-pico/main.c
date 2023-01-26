@@ -50,6 +50,8 @@ pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
 # and M1's position sensor as setpoint
 set var -999999999 999999999 1 0   1 0 5 s2    0.02 0
 
+set var -.3 .3 -5 1.7   0 0 5 s2    0.0027777778 1
+
 
 */
 

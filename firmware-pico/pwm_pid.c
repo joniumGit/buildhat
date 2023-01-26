@@ -49,7 +49,11 @@ static void getsetpoint(int pn) {
 
   if(p->spwaveshape==WAVE_VAR) {
     device_getsvar(&p->spsvar,0,&p->spwavephaseacc); // use spwavephaseacc to hold the variable before applying the scale function
+    ostr(sfloat(p->spwavephaseacc)); osp();
+    ostr(sfloat(p->spwavephase)); osp();
+    ostr(sfloat(p->spwaveperiod)); osp();
     u=(p->spwavephaseacc-p->spwavephase)*p->spwaveperiod;
+    ostrnl(sfloat(u));
     CLAMP(u,p->spwavemin,p->spwavemax);
     p->setpoint=u;
     return;
