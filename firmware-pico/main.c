@@ -50,7 +50,13 @@ pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
 # and M1's position sensor as setpoint
 set var -999999999 999999999 1 0   1 0 5 s2    0.02 0
 
-set var -.3 .3 -5 1.7   0 0 5 s2    0.0027777778 1
+run_to_position experiments
+echo 1 ; port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0
+# pid control for M0 using own position sensor as process variable
+port 0 ; echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .6 0.05
+pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
+
+set var -2 2 -5 1.7   0 0 5 s2    0.0027777778 1
 
 
 */
