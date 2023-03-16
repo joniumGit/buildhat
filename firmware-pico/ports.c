@@ -170,22 +170,40 @@ static void port_set_pwm_int(int pn,int pwm) {
 // set PWM values according to pwm:
 // -1 full power reverse
 // +1 full power forwards
-// applying bias mapping and then power limit
+// applying pwmthresh mapping and then power limit
+// called for each port (unless coasting) at a rate determined by PWM_UPDATE
 void port_set_pwm(int p,float pwm) {
-  int u;
+  int u,v;
   CLAMP(pwm,-1,1);
   u=((int)(pwm*131072)+1)/2; // rounded Q16
-  if(u>0) u+=portinfo[p].bias;
-  if(u<0) u-=portinfo[p].bias;
-  CLAMP(u,-portinfo[p].pwm_drive_limit,portinfo[p].pwm_drive_limit);
-  u=(u*PWM_PERIOD+PWM_PERIOD/2)>>16; // map to ±PWM_PERIOD
-  port_set_pwm_int(p,u);
+  if(ABS(u)<portinfo[p].minpwm) u=0; // don't try to generate tiny PWM values
+  if(ABS(u)>=portinfo[p].pwmthresh) v=u;    // if above slow/fast PWM switchover threshold, send value directly to PWM driver
+  else {
+    portinfo[p].pwmthreshacc+=u;            // enable PWM drivers at the threshold level at the correct average rate ("slow PWM")
+    if     (portinfo[p].pwmthreshacc>= portinfo[p].pwmthresh) v= portinfo[p].pwmthresh;
+    else if(portinfo[p].pwmthreshacc<=-portinfo[p].pwmthresh) v=-portinfo[p].pwmthresh;
+    else                                            v=0;
+    portinfo[p].pwmthreshacc-=v;
+    }
+  CLAMP(v,-portinfo[p].pwm_drive_limit,portinfo[p].pwm_drive_limit);
+  v=(v*PWM_PERIOD+PWM_PERIOD/2)>>16; // map to ±PWM_PERIOD
+  port_set_pwm_int(p,v);
   }
 
 void port_motor_coast(int pn) {
   port_set_pwmflags(pn,0x6f); // disable PWM
   port_set_pwmamount(pn,1); // minimum amount
   portinfo[pn].lastpwm=0x7fffffff;
+  }
+
+static void initsvar(struct svar*sv) {
+  sv->port=0;
+  sv->mode=0;
+  sv->offset=0;
+  sv->format=0;
+  sv->scale=0;
+  sv->unwrap=0;
+  sv->last=1.1e38; // values overr 1e38 flag that there is no valid "last" reading
   }
 
 void port_initpwm(int pn) {
@@ -195,7 +213,9 @@ void port_initpwm(int pn) {
   q->pwm_drive_limit=6554; // 0.1 Q16
   q->coast=0;
   q->lastpwm=0x7fffffff; // dummy value
-  q->bias=0;
+  q->pwmthresh=0;
+  q->pwmthreshacc=0;
+  q->minpwm=0;
   q->setpoint=0;
   q->spwaveshape=WAVE_SQUARE;
   q->spwavemin=0;
@@ -204,19 +224,15 @@ void port_initpwm(int pn) {
   q->spwavephase=0;
   q->spwavephaseacc=0;
   q->pid_pv=0;
-  q->pid_pv_last=0;
   q->pid_ierr=0;
   q->pid_perr=0;
-  q->pvport=0;
-  q->pvmode=0;
-  q->pvoffset=0;
-  q->pvformat=0;
-  q->pvscale=0;
-  q->pvunwrap=0;
+  initsvar(&q->pvsvar);
+  initsvar(&q->spsvar);
   q->Kp=0;
   q->Ki=0;
   q->Kd=0;
   q->windup=0;
+  q->deadzone=0;
   }
 
 // GPIO5 -> b0, GPIO6 -> b1

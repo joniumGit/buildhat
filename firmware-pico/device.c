@@ -63,17 +63,17 @@ void device_dump(int dn) {
   ostr("  position PID:"); for(i=0;i<4;i++) { osp(); o8hex(d->  pospid[i]); } onl();
   }
 
-int device_varfrommode(int port,int mode,int offset,int format,float*var) {
+int device_getsvar(struct svar*sv,int diff,float*var) {
   char buf[4];
   int i;
-  float v;
+  float v,dv;
   struct devinfo*dvp;
 
-  if(port<0||port>=NPORTS) return 0;
-  dvp=devinfo+port;
-  if(dvp->modedatalen[mode]==0) return 0;
-  for(i=0;i<(format&0x0f);i++) buf[i]=dvp->modedata[mode][offset+i]; // so that the value is aligned
-  switch(format) {
+  if(sv->port<0||sv->port>=NPORTS) return 0;
+  dvp=devinfo+sv->port;
+  if(dvp->modedatalen[sv->mode]==0) return 0;
+  for(i=0;i<(sv->format&0x0f);i++) buf[i]=dvp->modedata[sv->mode][sv->offset+i]; // so that the value is aligned
+  switch(sv->format) {
 case 0x001: v=(float)*(unsigned char* )buf; break;
 case 0x101: v=(float)*(  signed char* )buf; break;
 case 0x002: v=(float)*(unsigned short*)buf; break;
@@ -83,13 +83,28 @@ case 0x104: v=(float)*(  signed int*  )buf; break;
 case 0x204: v=       *(         float*)buf; break;
 default:    v=0;
     }
-  *var=v;
+  v*=sv->scale;
+  if(sv->last>=1e38) sv->last=v,*var=v;
+  dv=v-sv->last;                     // subtract consecutive scaled sensor readings
+  if(sv->unwrap==0) {
+    if(diff) *var=dv*(1000.0/PWM_UPDATE);
+    else     *var=v;
+    sv->last=v;
+    return 1;
+  } else { // unwrapping
+    if(dv> sv->unwrap/2) dv-=sv->unwrap;                 // normalise increment to ±0.5 of wrap range
+    if(dv<-sv->unwrap/2) dv+=sv->unwrap;
+    if(diff) *var=dv*(1000.0/PWM_UPDATE);
+    else     *var+=dv;
+    }
+  sv->last=v;
   return 1;
   }
 
 void device_dumpmodevar(int port,int mode,int offset,int format) {
   float v;
-  if(device_varfrommode(port,mode,offset,format,&v)==0) return;
+  struct svar sv={port,mode,offset,format,1,0};
+  if(device_getsvar(&sv,0,&v)==0) return;
   o1ch('P'); o1hex(port); ostr("V: "); ostrnl(sfloat(v));
   }
 

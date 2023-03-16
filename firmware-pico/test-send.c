@@ -94,11 +94,33 @@ int main(int ac,char**av) {
   else      opentty("/dev/ttyUSB0");
   usleep(200000);
 
+  if(1) { // speed PID test
+    double t;
+    int j,p0,p1;
+    ostr("debug 16 ; port 0 ; plimit 1 ; pwmparams .4 0; set 0\r");
+    ostr("combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 0 s1   1 0    0.003 0.03 0   100 .01\r");
+# oscillates at Kp=0.02
+pid 0 0 0 s1   1 0    0.01 0.02 0.0001   100 .01
+    for(j=2;j<=10;j+=2) {
+      sprintf(s,"set %.4f\r",(double)j);
+      ostr(s);
+      for(t=timestamp();timestamp()<t+2;) {
+        i=wstr(s,1000,1000);
+        if(s[0]) {
+          printf("%.3f: <%s>\n",timestamp(),s);
+          }
+        if(i==-1) break;
+        }
+      }
+    sprintf(s,"set 0\r");
+    ostr(s);
+    }
+
   if(0) { // simultaneous motors test
     ostr("debug 0 ; port 0\r");
-    ostr("combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; bias .3 ; pid 0 0 5 s2 0.0027777778 1 3 0 .1 3\r");
+    ostr("combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .3 0; pid 0 0 5 s2 0.0027777778 1 3 0 .1 3 .01\r");
     ostr("port 1\r");
-    ostr("combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; bias .3 ; pid 1 0 5 s2 0.0027777778 1 3 0 .1 3\r");
+    ostr("combi 0 1 0 2 0 3 0 ; select 0 ; plimit 1 ; pwmparams .3 0; pid 1 0 5 s2 0.0027777778 1 3 0 .1 3 .01\r");
     for(;;) {
       ostr("port 0 ; set ramp 0 1 1 0\r");
       ostr("port 1 ; set ramp 0 1 1 0\r");
@@ -143,11 +165,11 @@ int main(int ac,char**av) {
       }
     }
 
-  if(1) { // angular accuracy test
+  if(0) { // angular accuracy test
     double t;
     int j,p0,p1;
-    ostr("debug 16 ; port 0 ; plimit .96 ; bias .4 ; set .0\r");
-    ostr("port 0; combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 1 s4 0.0027777778 0 2 0 .1 .1 ; set 0\r");
+    ostr("debug 16 ; port 0 ; plimit .96 ; pwmparams .4 0; set .0\r");
+    ostr("port 0; combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 1 s4 0.0027777778 0 2 0 .1 .1 .01; set 0\r");
     for(j=0;j<24;j++) {
       if(j<12) p0=j,p1=j+1;
       else     p0=24-j,p1=23-j;

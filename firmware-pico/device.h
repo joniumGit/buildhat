@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hardware.h"
+#include "ports.h"
 
 #define MAXNMODES 16
 #define MAXNCOMBIS 16                            // because the COMBI message fits in 32 bytes, one short for each combi
@@ -39,7 +40,7 @@ extern struct devinfo {
 
 extern void device_init(int dn);
 extern void device_dump(int dn);
-extern int device_varfrommode(int port,int mode,int offset,int format,float*var);
+extern int device_getsvar(struct svar*sv,int diff,float*var);
 extern void device_dumpmodevar(int port,int mode,int offset,int format);
 extern void device_dumpmoderaw(int port,int mode);
 extern void device_dumpmodefmt(int port,int mode);

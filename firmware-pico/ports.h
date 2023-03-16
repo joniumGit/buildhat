@@ -7,6 +7,18 @@
 
 #define DEFAULT_SELREPRATE 100
 
+#define PWM_UPDATE 10                              // in milliseconds
+
+struct svar {
+  unsigned int port;
+  unsigned int mode;
+  unsigned int offset;
+  unsigned int format;
+  float scale;
+  float unwrap;
+  float last;
+  };
+
 extern struct portinfo {
   unsigned int lasttick;                           // tick when last character seen
   volatile int mstate;                             // message reading state
@@ -27,7 +39,9 @@ extern struct portinfo {
   int pwm_drive_limit;                             // maximum PWM drive allowed on this port
   int coast;                                       // 1=coasting
   int lastpwm;                                     // integer value to which PWM was last set
-  int bias;                                        // bias offset Q16
+  int pwmthresh;                                   // slow/fast PWM switchover thresholed Q16
+  int pwmthreshacc;                                // slow PWM error accumulator Q16
+  int minpwm;                                      // minimum PWM driver input value
   float setpoint;                                  // PID/direct PWM setpoint
   int spwaveshape;                                 // set point wave generator
   float spwavemin;
@@ -35,18 +49,14 @@ extern struct portinfo {
   float spwaveperiod;
   float spwavephase;
   float spwavephaseacc;
+  struct svar spsvar;                              // variable used for setpoint (if any)
   float pid_pv;                                    // PID process variable
-  float pid_pv_last;                               // previous value of process variable as read from sensor
   float pid_ierr;                                  // PID integral error accumulator
   float pid_perr;                                  // PID previous error
-  unsigned int pvport;
-  unsigned int pvmode;
-  unsigned int pvoffset;
-  unsigned int pvformat;
-  float pvscale;
-  float pvunwrap;
+  struct svar pvsvar;
   float Kp,Ki,Kd;                                  // PID coefficients Q16
   float windup;                                    // windup limit for integral error
+  float deadzone;                                  // ± dead zone for error
   } portinfo[NPORTS];
 
 extern struct message {

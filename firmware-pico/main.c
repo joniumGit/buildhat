@@ -1,17 +1,80 @@
-// port 1 ; set triangle 0 .1 1 0
-// port 1 ; set sine 0 .1 1 0
-// port 1 ; set square 0 1 2 0
-// port 1 ; set pulse 0.2 .03 2 0
+/*
+port 1 ; set triangle 0 .1 1 0
+port 1 ; set sine 0 .1 1 0
+port 1 ; set square 0 1 2 0
+port 1 ; set pulse 0.2 .03 2 0
 
-// example for position PID:
-// echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit .6 ; bias .4 ; pid 0 0 5 s2 0.0027777778 1 5 0 .1 3
-// echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit .6 ; bias .4 ; pid 0 0 1 s4 0.0027777778 0 5 0 .1 3
-// set square 0 1 3 0
-// set triangle 0 1 15 0
-// set ramp 0 1 10 0
+Examples
+========
 
-// example for speed PID:
-// echo 1 ; combi 0 1 0 2 0 3 0 ; select 0 ; plimit .6 ; bias .2 ; pid 0 0 0 s1 1 0 0.003 0.01 0 100 ; set 30
+These examples assume you have a small motor connected to each of ports 0 and 1.
+In all cases set "plimit 1" and (if wanted) "echo 1".
+
+1. Simple position PID
+
+port 0
+combi 0 1 0 2 0 3 0 ; select 0
+pwmparams .6 0.01
+pid 0 0 5 s2    0.0027777778 1    5 0.0 0.2   3 0.005
+set square 0 1 3 0
+
+2. Simple speed PID using speed sensor
+
+port 0
+combi 0 1 0 2 0 3 0 ; select 0
+pwmparams .6 0.01
+pid 0 0 0 s1    1 0    0.01 0.02 0.0001    100 .01
+set triangle -100 100 3 0
+
+3. Speed PID using derivative of position sensor
+
+port 0
+combi 0 1 0 2 0 3 0 ; select 0 
+pwmparams .6 0.01
+pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
+set triangle -3 3 3 0
+
+4. Motor 0 position tracks position of motor 1
+
+# set up port 1 motor to get all the variables
+port 1 ; coast ; combi 0 1 0 2 0 3 0 ; select 0
+port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; pwmparams .6 0.01
+# pid control for M0 using own position sensor as process variable
+pid 0 0 5 s2    0.0027777778 1    5 0.0 0.2   3 0.01
+# and M1's position sensor as setpoint
+set var -999999999 999999999 1 0   1 0 5 s2    0.0027777778 1
+
+# or with 2:1 gearing
+set var -999999999 999999999 1 0   1 0 5 s2    0.0055555555 2
+
+
+5. Motor 0 speed tracks position of motor 1
+
+# set up port 1 motor to get all the variables
+port 1 ; coast ; combi 0 1 0 2 0 3 0 ; select 0
+port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; pwmparams .6 0.01
+# pid control for M0 using derivative of own position sensor as process variable
+pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
+# and M1's position sensor as setpoint
+set var -999999999 999999999 1 0   1 0 5 s2    0.02 0
+
+
+
+
+Experiments with speed vs position control
+
+set var -2 2 -5 1.7   0 0 5 s2    0.0027777778 1
+
+
+Other 
+
+port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; pwmparams .6 0.01
+# pid control for M0 using own position sensor as process variable
+pid 0 0 5 s2    0.0027777778 1    5 0.0 0.2   3 0.00
+# and M1's position sensor as setpoint
+set var -999999999 999999999 1 0   0 0 5 s2    0.0027777778 1
+
+*/
 
 #include <string.h>
 #include "common.h"

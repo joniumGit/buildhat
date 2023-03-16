@@ -265,7 +265,7 @@ void proc_ctrl() {
     if(u==0x0d) {
       onl();
       cmdbuf[cbwptr]=0;
-      proc_cmd();
+      if(cmdbuf[0]!='#') proc_cmd();
       cbwptr=0;
       continue;
       }
