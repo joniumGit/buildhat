@@ -12,14 +12,14 @@ extern struct porthw {
   int pin_dio;
   int pin_rx;
   int pin_tx;
-  i2c_inst_t*i2c;                                          // port for communication with motor driver
-  int i2c_add;
-  PIO pio;
+  i2c_inst_t*i2c;                                          // I²C port for communication with motor driver
+  int i2c_add;                                             // I²C address
+  PIO pio;                                                 // PIO and state machines used, interrupts allocated
   int txsm;
   int rxsm;
   int irq;
   volatile io_rw_32*inte;
-  unsigned int intb; // interrupt bits
+  unsigned int intb;                                       // interrupt bits
   } porthw[NPORTS];
 
 // INTE bit is intb&PORT_INTE_RXMASK or intb&PORT_INTE_TXMASK
@@ -52,8 +52,8 @@ extern struct porthw {
 #define PIN_I2C1_SDA   18
 #define PIN_I2C1_SCL   19
 
-#define PIN_DEBUG0 2
-#define PIN_DEBUG1 3
+#define PIN_DEBUG0      2
+#define PIN_DEBUG1      3
 
 #define GPIO_READ(pin) (!!gpio_get(pin))
 

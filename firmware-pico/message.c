@@ -21,16 +21,15 @@ void device_sendsys(int dn,unsigned char b) {
 void device_sendmessage(int dn,int b0,int b1,int plen,unsigned char*payload) {
   unsigned char buf[TXBLEN];
   int i,j,c;
-  int lplen;                     // log₂ of payload length
+  int lplen;
   CLAMP(plen,0,128);
-  for(lplen=0;lplen<7;lplen++) if(1<<lplen>=plen) break;
+  for(lplen=0;lplen<7;lplen++) if(1<<lplen>=plen) break;   // compute log₂ of payload length
   j=0;
-  c=buf[j++]=(b0&0xc7)|(lplen<<3);
-  if(b1>=0) c^=buf[j++]=b1;
-  for(i=0;i<plen    ;i++) c^=buf[j++]=payload[i];
+  c=buf[j++]=(b0&0xc7)|(lplen<<3);                 // first byte of message; start checksum calculation
+  if(b1>=0) c^=buf[j++]=b1;                        // second byte if any, update checksum
+  for(i=0;i<plen    ;i++) c^=buf[j++]=payload[i];  // payload, update checksum
   for(   ;i<1<<lplen;i++) c^=buf[j++]=0;           // pad with zeros
   buf[j++]=c^0xff;                                 // insert checksum
-//  for(i=0;i<j;i++) { osp(); o2hex(buf[i]); } onl();
   port_sendmessage(dn,buf,j);
   }
 
@@ -41,7 +40,7 @@ void device_sendint  (int dn,int b0,int b1,unsigned int   v) { device_sendmessag
 
 // send a 2-part SELECT message that works with extended modes
 void device_sendselect(int d,int m) {
-  device_sendchar(d,0x46,-1,m&0x8);                // MODESET message !!! strictly we should do outgoing message queueing
+  device_sendchar(d,0x46,-1,m&0x8);                // MODESET message (strictly we should do outgoing message queueing)
   device_sendchar(d,0x43,-1,m&0x7);                // SELECT message
   }
 
@@ -54,8 +53,8 @@ int proc_setupmessages(int pn) {
   struct devinfo*d=devinfo+pn;
   struct modeinfo*md;
   int i;
-  if(mqhead[pn]==mqtail[pn]) return -1;            // nothing to do?
-  m=(struct message*)mqueue[pn]+mqtail[pn];                         // get message
+  if(mqhead[pn]==mqtail[pn]) return -1;            // message queue empty, so nothing to do?
+  m=(struct message*)mqueue[pn]+mqtail[pn];        // get message
   switch(m->type) {
 case 0x04:                                         // ACK
     break;
@@ -70,10 +69,10 @@ case 0x41:                                         // MODES
       d->nview =m->payload[3]&0x0f;
       }
     break;
-case 0x42:
+case 0x42:                                         // baud rate
     if(m->plen>=4) d->baud=*(int*)&m->payload[0];
     break;
-case 0x47:
+case 0x47:                                         // hardware and software versions
     if(m->plen>=4) d->hwver=*(int*)&m->payload[0];
     if(m->plen>=8) d->swver=*(int*)&m->payload[4];
     break;
@@ -85,7 +84,7 @@ case 0x80:
       md->name[m->plen]=0;                         // ensure 0-termination
       break;
   case 0x01:
-      if(m->plen>=4) memcpy(&md->rawl,m->payload+0,4);
+      if(m->plen>=4) memcpy(&md->rawl,m->payload+0,4);     // various scaling factors
       if(m->plen>=8) memcpy(&md->rawh,m->payload+4,4);
       break;
   case 0x02:
@@ -138,15 +137,15 @@ case 0x80:
 // unhandled INFO messages
 
   case 0x07:
-      // !!! BIAS  (used in City Train)
+      // BIAS  (used in City Train)
   case 0x08:
-      // !!! UKEY  (device unique key (serial))
+      // UKEY  (device unique key (serial))
   case 0x0B:
-      // !!! PMGMT  (device power management constants)
+      // PMGMT  (device power management constants)
   case 0x0C:
-      // !!! VBIAS  (device voltage bias constants)
+      // VBIAS  (device voltage bias constants)
   case 0xFF:
-      // !!! gets all sensor info
+      // gets all sensor info
   default:
 unhandled:
 DEB_UKM {
@@ -163,15 +162,16 @@ DEB_UKM {
       }
     break;
     }
-  mqtail[pn]=(mqtail[pn]+1)%MQLEN;
+  mqtail[pn]=(mqtail[pn]+1)%MQLEN;                 // update queue tail pointer
   return m->type;
   }
 
+// process any received data message
 // return type of message processed if any, else -1
 int proc_datamessages(int pn) {
   struct message*m;
   struct devinfo*d=devinfo+pn;
-  if(mqhead[pn]==mqtail[pn]) return -1;
+  if(mqhead[pn]==mqtail[pn]) return -1;            // queue empty?
   m=(struct message*)mqueue[pn]+mqtail[pn];
   switch(m->type) {
 case 0xc0:                                         // "data message"
@@ -180,11 +180,11 @@ DEB_DPY {
       ostr(": DATA mode="); o1hex(m->mode);
       ostr(" payload="); o2hexdump(m->payload,m->plen); onl();
       }
-    memcpy(d->modedata[m->mode],m->payload,m->plen);
+    memcpy(d->modedata[m->mode],m->payload,m->plen);       // copy the payload
     d->modedatalen[m->mode]=m->plen;
-    if(m->mode==portinfo[pn].selmode) {
-      portinfo[pn].selrxcount++;
-      portinfo[pn].selrxever=1;
+    if(m->mode==portinfo[pn].selmode) {            // does the mode match our selected mode
+      portinfo[pn].selrxcount++;                   // count the messages
+      portinfo[pn].selrxever=1;                    // and flag that we have received at least one ever
       }
     break;
 default:
@@ -195,6 +195,6 @@ DEB_UKM {
       }
     break;
     }
-  mqtail[pn]=(mqtail[pn]+1)%MQLEN;
+  mqtail[pn]=(mqtail[pn]+1)%MQLEN;                 // update queue tail pointer
   return m->type;
   }

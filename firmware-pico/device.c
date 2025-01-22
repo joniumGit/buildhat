@@ -5,14 +5,17 @@
 #include "control.h"
 #include "ioconv.h"
 
+// information about the device connected to each port
 struct devinfo devinfo[NPORTS];
 
+// initialise device information
 void device_init(int dn) {
   struct devinfo*d=devinfo+dn;
   memset(d,0,sizeof(struct devinfo));
-  d->type=-1;
+  d->type=-1;                                      // no device detected
   }
 
+// dump information known about a device
 void device_dump(int dn) {
   struct devinfo*d=devinfo+dn;
   int i,j;
@@ -63,8 +66,10 @@ void device_dump(int dn) {
   ostr("  position PID:"); for(i=0;i<4;i++) { osp(); o8hex(d->  pospid[i]); } onl();
   }
 
+// extract a variable from mode data provided by a device
+// if diff==1, differentiate with respect to time
 int device_getsvar(struct svar*sv,int diff,float*var) {
-  char buf[4];
+  char buf[4];                                             // a word-aligned buffer
   int i;
   float v,dv;
   struct devinfo*dvp;
@@ -74,7 +79,7 @@ int device_getsvar(struct svar*sv,int diff,float*var) {
   if(dvp->modedatalen[sv->mode]==0) return 0;
   for(i=0;i<(sv->format&0x0f);i++) buf[i]=dvp->modedata[sv->mode][sv->offset+i]; // so that the value is aligned
   switch(sv->format) {
-case 0x001: v=(float)*(unsigned char* )buf; break;
+case 0x001: v=(float)*(unsigned char* )buf; break;         // regardless of original type, convert to float
 case 0x101: v=(float)*(  signed char* )buf; break;
 case 0x002: v=(float)*(unsigned short*)buf; break;
 case 0x102: v=(float)*(  signed short*)buf; break;
@@ -84,15 +89,15 @@ case 0x204: v=       *(         float*)buf; break;
 default:    v=0;
     }
   v*=sv->scale;
-  if(sv->last>=1e38) sv->last=v,*var=v;
-  dv=v-sv->last;                     // subtract consecutive scaled sensor readings
+  if(sv->last>=1e38) sv->last=v,*var=v;                    // if we do not have a previous value, initialise it to the current value
+  dv=v-sv->last;                                           // subtract consecutive scaled sensor readings
   if(sv->unwrap==0) {
     if(diff) *var=dv*(1000.0/PWM_UPDATE);
     else     *var=v;
     sv->last=v;
     return 1;
-  } else { // unwrapping
-    if(dv> sv->unwrap/2) dv-=sv->unwrap;                 // normalise increment to ±0.5 of wrap range
+  } else {                                                 // "phase unwrapping" for angular sensors to give continuous output
+    if(dv> sv->unwrap/2) dv-=sv->unwrap;                   // normalise increment to ±0.5 of wrap range
     if(dv<-sv->unwrap/2) dv+=sv->unwrap;
     if(diff) *var=dv*(1000.0/PWM_UPDATE);
     else     *var+=dv;
@@ -101,6 +106,7 @@ default:    v=0;
   return 1;
   }
 
+// dump the value of a variable
 void device_dumpmodevar(int port,int mode,int offset,int format) {
   float v;
   struct svar sv={port,mode,offset,format,1,0};
@@ -108,6 +114,7 @@ void device_dumpmodevar(int port,int mode,int offset,int format) {
   o1ch('P'); o1hex(port); ostr("V: "); ostrnl(sfloat(v));
   }
 
+// dump raw mode data
 void device_dumpmoderaw(int port,int mode) {
   struct devinfo*dvp;
   int i;
@@ -122,6 +129,7 @@ void device_dumpmoderaw(int port,int mode) {
   onl();
   }
 
+// return number of bytes occupied by a value in the given format
 static int formattolen(int f) {
   switch(f) {
 case 0: return 1;
@@ -132,6 +140,7 @@ case 3: return 4;
   return 1;
   }
 
+// dump formatted mode data
 static void dumpfmt(UC*p,struct modeinfo*mp) {
   UC b[4];
   switch(mp->format_type) {
@@ -145,6 +154,7 @@ case 3:
     }
   }
 
+// dump all data associated with a given mode of the device on a given port
 void device_dumpmodefmt(int port,int mode) {
   struct devinfo*dvp;
   struct modeinfo*mp;

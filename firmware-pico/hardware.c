@@ -1,5 +1,6 @@
 #include "hardware.h"
 
+// pin allocation and other information for each port
 struct porthw porthw[NPORTS]={
 //    rts dio  rx  tx  i2c add         pio  txsm rxsm        irq          inte  intb
     {  13, 12, 10, 11,i2c0,0x60+(0<<3),pio0,   0,   1,PIO0_IRQ_0,&(pio0->inte0),0x12 },
@@ -12,6 +13,7 @@ struct porthw porthw[NPORTS]={
 #define ACCEL_I2C i2c0
 #define ACCEL_ADD 0x6a
 
+// set the onboard LEDs according to bits 0 and 1 of d
 void leds_set(int d) {
   gpio_put(PIN_LED0, d    &1);
   gpio_put(PIN_LED1,(d>>1)&1);

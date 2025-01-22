@@ -12,9 +12,6 @@
 #include "ioconv.h"
 #include "control.h"
 #include "version.h"
-//#include "hardware/resets.h"
-
-extern void reboot();
 
 static int cmdport=0;                                     // current port affected by commands
 
@@ -45,15 +42,12 @@ static void cmd_help() {
   ostrnl("  selrate <rate>        : set reporting period (use after 'select')");
   ostrnl("  combi <index> <clist> : configure a combi mode with a list of mode/dataset specifiers");
   ostrnl("  combi <index>         : de-configure a combi mode");
-//  ostrnl("  accelerometer         : read accelerometer data once");
   ostrnl("  write1 <hexbyte>*     : send message with 1-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  write2 <hexbyte>*     : send message with 2-byte header; pads if necessary, sets payload length and checksum");
   ostrnl("  echo <0|1>            : enable/disable echo and prompt on command port");
   ostrnl("  debug <debugcode>     : enable debugging output");
-//  ostrnl("  driverdump <port>:  dump driver data");
   ostrnl("  version               : print version string");
   ostrnl("  signature             : dump firmware signature");
-//  ostrnl("  bootloader           : reset into bootloader");
   ostrnl("");
   ostrnl("Where:");
   ostr  ("  <port>                : 0.."); odec(NPORTS-1); onl();
@@ -106,6 +100,8 @@ static int parsesv(struct svar*sv) { // parse a "scaled variable" specification
 err:
   return 0;
   }
+
+// the following functions cmd_xxx() implement the given commands
 static int cmd_port() {
   unsigned int u;
   if(!parseuint(&u)) return 1;
@@ -113,6 +109,7 @@ static int cmd_port() {
   cmdport=u;
   return 0;
   }
+
 static int cmd_ledmode() {
   int u;
   if(!parseint(&u)) return 1;
@@ -120,21 +117,25 @@ static int cmd_ledmode() {
   ledmode=u;
   return 0;
   }
+
 static int cmd_list() {
   int i;
   for(i=0;i<NPORTS;i++) device_dump(i);
   return 0;
   }
+
 static int cmd_coast() {
   portinfo[cmdport].coast=1;
   return 0;
   }
+
 static int cmd_pwm() {
   portinfo[cmdport].setpoint=0;
   portinfo[cmdport].pwmmode=0;
   portinfo[cmdport].coast=0;
   return 0;
   }
+
 static int cmd_pid(int diff) {
   float v;
   portinfo[cmdport].setpoint=0;
@@ -152,6 +153,7 @@ err:
   portinfo[cmdport].coast=0;
   return 1;
   }
+
 static void cmd_set_const(float u) {
   portinfo[cmdport].spwaveshape =WAVE_SQUARE;
   portinfo[cmdport].spwavemin   =u;
@@ -160,6 +162,7 @@ static void cmd_set_const(float u) {
   portinfo[cmdport].spwavephase =0;
   portinfo[cmdport].coast=0;
   }
+
 static int cmd_set_wave(int shape) {
   float min,max,period,phase;
   if(!parsefloat(&min))    return 1;
@@ -179,6 +182,7 @@ static int cmd_set_wave(int shape) {
   portinfo[cmdport].coast=0;
   return 0;
   }
+
 static int cmd_set() {
   float u;
   if(strmatch("square"))   return cmd_set_wave(WAVE_SQUARE);
@@ -195,22 +199,16 @@ static int cmd_set() {
   cmd_set_const(u);
   return 0;
   }
-//static int cmd_bootloader() {
-//  reset_block(0x01ffffff);
-//  reboot();
-//  }
+
 static int cmd_on()          { cmd_set_const(1.0); return 0; }
+
 static int cmd_off()         { cmd_set_const(0.0); return 0; }
+
 static int cmd_vin()         { ofxp((adc_vin<<16)/1000,16,2); ostrnl(" V"); return 0; }
+
 static int cmd_echo()        { return !parseint(&echo); }
+
 static int cmd_debug()       { return !parseint(&debug); }
-//static int cmd_driverdump()  {
-//  int pn;
-//  if(!parseint(&pn)) return 1;
-//  CLAMP(pn,0,NPORTS-1);
-//  port_driverdump(pn);
-//  return 0;
-//  }
 
 static int cmd_plimit() {
   float u;
@@ -221,6 +219,7 @@ static int cmd_plimit() {
     portinfo[i].pwm_drive_limit=(int)(u*65536+0.5); // Q16
   return 0;
   }
+
 static int cmd_port_plimit() {
   float u;
   if(!parsefloat(&u)) return 1;
@@ -228,6 +227,7 @@ static int cmd_port_plimit() {
   portinfo[cmdport].pwm_drive_limit=(int)(u*65536+0.5); // Q16
   return 0;
   }
+
 static int cmd_pwmparams() {
   float u,v;
   if(!parsefloat(&u)) return 1;
@@ -238,6 +238,7 @@ static int cmd_pwmparams() {
   portinfo[cmdport].minpwm=(int)(v*65536+0.5); // Q16
   return 0;
   }
+
 static int cmd_select(int f) {        // f=0: normal mode; f=1 report value only once ("selonce" command)
   int m,u;
   if(!parseint(&u)) goto off;         // no arguments? turn off data output
@@ -272,6 +273,7 @@ err:
   portinfo[cmdport].selrxever=0;
   return 1;
   }
+
 static int cmd_selrate() {
   int u;
   if(!parseint(&u)) return 1;
@@ -279,6 +281,7 @@ static int cmd_selrate() {
   portinfo[cmdport].selreprate=u;
   return 0;
   }
+
 static int cmd_combi() {
   int i,j;
   int n;                         // count of entries
@@ -307,6 +310,7 @@ static int cmd_combi() {
 err:
   return 1;
   }
+
 static int cmd_write(int nh) {   // nh=number of header bytes, 1 or 2
   int i;
   unsigned int u;
@@ -325,19 +329,12 @@ static int cmd_write(int nh) {   // nh=number of header bytes, 1 or 2
 err:
   return 1;
   }
-// static int cmd_accelerometer() {
-//   int ax,ay,az;
-//   accel_getaxyz(&ax,&ay,&az);
-//   ostr("Accelerometer: ");
-//   osfxp(ax,16,2); osp();
-//   osfxp(ay,16,2); osp();
-//   osfxp(az,16,2); onl();
-//   return 0;
-//   }
+
 static void cmd_version() {
   ostr("Firmware version: ");
   ostrnl(FWVERSION);
   }
+
 static void cmd_signature() {
   int i;
   ostr("Firmware signature:");
@@ -348,11 +345,13 @@ static void cmd_signature() {
   onl();
   }
 
+// print the command prompt
 void cmd_prompt() {
   if(!echo) return;
   o1ch('P'); odec(cmdport); o1ch('>');
   }
 
+// process a received command
 void proc_cmd() {
   parse_reset();
   for(;;) {
@@ -366,7 +365,6 @@ void proc_cmd() {
     else if(strmatch("ledmode"      )) { if(cmd_ledmode())       goto err; }
     else if(strmatch("pwm"          )) { if(cmd_pwm())           goto err; }
     else if(strmatch("coast"        )) { if(cmd_coast())         goto err; }
-//!!!    else if(strmatch("pwmfreq" )) { if(cmd_pwmfreq())       goto err; }
     else if(strmatch("pid"          )) { if(cmd_pid(0))          goto err; }
     else if(strmatch("pid_diff"     )) { if(cmd_pid(1))          goto err; }
     else if(strmatch("set"          )) { if(cmd_set())           goto err; }
@@ -380,15 +378,12 @@ void proc_cmd() {
     else if(strmatch("selonce"      )) { if(cmd_select(1))       goto err; }
     else if(strmatch("selrate"      )) { if(cmd_selrate())       goto err; }
     else if(strmatch("combi"        )) { if(cmd_combi())         goto err; }
-//    else if(strmatch("accelerometer")) { if(cmd_accelerometer()) goto err; }
     else if(strmatch("write1"       )) { if(cmd_write(1))        goto err; }
     else if(strmatch("write2"       )) { if(cmd_write(2))        goto err; }
     else if(strmatch("echo"         )) { if(cmd_echo())          goto err; }
     else if(strmatch("debug"        )) { if(cmd_debug())         goto err; }
-//    else if(strmatch("driverdump"   )) { if(cmd_driverdump())    goto err; }
     else if(strmatch("version"      )) cmd_version();
     else if(strmatch("signature"    )) cmd_signature();
-//    else if(strmatch("bootloader" )) cmd_bootloader();
     else goto err;
     }
 err:

@@ -4,7 +4,7 @@
 #include "ports.h"
 
 #define MAXNMODES 16
-#define MAXNCOMBIS 16                            // because the COMBI message fits in 32 bytes, one short for each combi
+#define MAXNCOMBIS 16                              // because the COMBI message fits in 32 bytes, one short for each combi
 
 struct modeinfo {
   char name[129];
@@ -30,11 +30,11 @@ extern struct devinfo {
   int baud;                                        // fast baud rate
   unsigned int hwver,swver;                        // hardware and software versions
   struct modeinfo modes[MAXNMODES];
-  int ncombis;
+  int ncombis;                                     // number of combis
   unsigned short validcombis[MAXNCOMBIS];
   int pospid[4];                                   // position PID constants reported by device
   int speedpid[4];                                 // speed PID constants reported by device
-  unsigned char modedata[MAXNMODES][128];
+  unsigned char modedata[MAXNMODES][128];          // raw mode data
   int modedatalen[MAXNMODES];                      // number of bytes received; 0 if modedata[i] has never been written to
   } devinfo[NPORTS];
 

@@ -1,6 +1,5 @@
 #include <ctype.h>
 #include "common.h"
-// #include "system.h"
 #include "debug.h"
 #include "control.h"
 #include "command.h"
@@ -23,15 +22,16 @@ static volatile char ctrltxbuf[CTRLTXBLEN];
 static volatile int ctrltxhead;
 static volatile int ctrltxtail;
 
+// interrupt service routine for the control UART
 void control_uart_irq() {
   uart_hw_t*u=uart_get_hw(UART_C);
   int b,i,s;
   s=u->fr;
   if(s&0x80) {                                     // TX empty?
     if(ctrltxhead==ctrltxtail) {                   // buffer empty?
-      u->icr=0x20;                              // disable interrupt
+      u->icr=0x20;                                 // disable interrupt
     } else {
-      u->dr=ctrltxbuf[ctrltxtail];
+      u->dr=ctrltxbuf[ctrltxtail];                 // extract a character from the circular TX buffer
       ctrltxtail=(ctrltxtail+1)%CTRLTXBLEN;
       }
     }
@@ -39,28 +39,31 @@ void control_uart_irq() {
     b=u->dr;                                       // read byte
     i=(ctrlrxhead+1)%CTRLRXBLEN;
     if(i==ctrlrxtail) return;                      // buffer full? discard
-    ctrlrxbuf[ctrlrxhead]=b;
+    ctrlrxbuf[ctrlrxhead]=b;                       // insert in circular RX buffer
     ctrlrxhead=i;
     }
   }
 
+// get one received character; -1 if none waiting
 int i1chu() {
   int b;
-  if(ctrlrxhead==ctrlrxtail) return -1;
-  b=ctrlrxbuf[ctrlrxtail];
+  if(ctrlrxhead==ctrlrxtail) return -1;            // buffer empty?
+  b=ctrlrxbuf[ctrlrxtail];                         // extract a character from the circular RX buffer
   ctrlrxtail=(ctrlrxtail+1)%CTRLRXBLEN;
   return b;
   }
 
+// send one character
 void o1chu(int c) {
   int i;
   i=(ctrltxhead+1)%CTRLTXBLEN;
   if(i==ctrltxtail) return;                        // buffer full? discard
-  ctrltxbuf[ctrltxhead]=c;
+  ctrltxbuf[ctrltxhead]=c;                         // insert in circular TX buffer
   ctrltxhead=i;
-  irq_set_pending(UART0_IRQ);
+  irq_set_pending(UART0_IRQ);                      // make sure an interrupt occurs to process this character
   }
 
+// return whether the circular TX buffer is less than half full
 int ctrl_ospace() {
   int i;
   i=ctrltxhead-ctrltxtail;
@@ -68,25 +71,25 @@ int ctrl_ospace() {
   return i<CTRLTXBLEN/2;               // less than half full?
   }
 
+// initialise the control interface
 void init_control() {
   irq_set_enabled(UART0_IRQ,0);
-  ctrlrxhead=ctrlrxtail=0;
+  ctrlrxhead=ctrlrxtail=0;             // empty buffers
   ctrltxhead=ctrltxtail=0;
   uart_init(UART_C,UART_C_BAUD);
   gpio_set_function(UART_C_RXPIN,GPIO_FUNC_UART);
   gpio_set_function(UART_C_TXPIN,GPIO_FUNC_UART);
   uart_set_fifo_enabled(UART_C,0);
   irq_set_exclusive_handler(UART0_IRQ,control_uart_irq);
-//  uart_set_irq_enables(UART_C,1,1);
   uart_get_hw(UART_C)->ifls=0;
   uart_get_hw(UART_C)->imsc=0x30;
-  uart_get_hw(UART_C)->dr;
+  uart_get_hw(UART_C)->dr;             // read any character that may be in the UART's buffer
   uart_get_hw(UART_C)->icr=0x7ff;
   irq_set_enabled(UART0_IRQ,1);
   onl();
   ostrnl("Type help <RETURN> for help");
   cmd_prompt();
-  do wait_ticks(10); while(i1ch()!=-1); // !!!we seem to get a spurious character in the RX buffer at the start
+  do wait_ticks(10); while(i1ch()!=-1); // discard any spurious characters received at the start
   }
 
 // wait for a character
@@ -102,7 +105,10 @@ static char cmdbuf[CMDBUFLEN+1];
 static int cbwptr=0;
 static int cbrptr;
 
+// reset the parser
 void parse_reset() { cbrptr=0; }
+
+// are we at the end of the input line?
 int parse_eol() { return cmdbuf[cbrptr]==0; }
 
 void sksp() {                                      // skip spaces
@@ -157,7 +163,7 @@ int parseint(int*p) {
     cbrptr=i;                                      // restore cbrptr if we failed to find an integer
     return 0;
     }
-  *p=neg?-(int)u:(int)u;
+  *p=neg?-(int)u:(int)u;                           // apply sign
   return 1;
   }
 
@@ -188,7 +194,7 @@ int parseq16(int*p) {
       }
     v+=(u+0x80)>>8;                                // rounded and shifted to Q16
     }
-  *p=neg?-(int)v:(int)v;
+  *p=neg?-(int)v:(int)v;                           // apply sign
   sksp();
   return 1;
   }
@@ -226,6 +232,8 @@ int parsefloat(float*p) {
   return 1;
   }
 
+// attempt to parse a format specifier
+// return 1 for success, writing code to *p, and advance cbrptr
 int parsefmt(int*p) {
   if     (cmdbuf[cbrptr]=='u'&&cmdbuf[cbrptr+1]=='1') *p=0x001;
   else if(cmdbuf[cbrptr]=='s'&&cmdbuf[cbrptr+1]=='1') *p=0x101;
@@ -240,7 +248,7 @@ int parsefmt(int*p) {
   return 1;
   }
 
-// check for match against given string
+// check for match against given string, allowing initial substring matches
 // return 1 if a match, and advance cbrptr
 int strmatch(char*s) {
   int i,j;
@@ -257,19 +265,20 @@ int strmatch(char*s) {
   return 0;
   }
 
+// check the control interface and carry out any required actions
 void proc_ctrl() {
   int u;
   for(;;) {
     u=i1ch();
     if(u==-1) return;
-    if(u==0x0d) {
+    if(u==0x0d) {                                // carriage return
       onl();
       cmdbuf[cbwptr]=0;
-      if(cmdbuf[0]!='#') proc_cmd();
+      if(cmdbuf[0]!='#') proc_cmd();             // "#" introduces a comment: discard it; otherwise process the command
       cbwptr=0;
       continue;
       }
-    if(u==0x08||u==0x7f) {
+    if(u==0x08||u==0x7f) {                       // delete/backspace
       if(cbwptr<1) continue;
       cbwptr--;
       if(echo) { o1ch(0x08); osp(); o1ch(0x08); }

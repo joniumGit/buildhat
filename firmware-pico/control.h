@@ -3,9 +3,9 @@
 #define CTRLRXBLEN 8192                            // enough for 36ms of data at 3Mbaud
 #define CTRLTXBLEN 8192
 
-#define CMDBUFLEN 256
+#define CMDBUFLEN 256                              // maximum length of a command
 
-extern int echo;
+extern int echo;                                   // are we echoing characters back via the UART?
 
 extern int i1chu();
 extern void o1chu(int c);

@@ -16,6 +16,3 @@ extern void ostrs(char*s);
 #define i1ch i1chu                                 // use USART 2 for debug
 #define o1ch o1chu                                 // use USART 2 for debug
 #define ostr ostru
-// #define i1ch i1chs                              // use semi-hosting for debug
-// #define o1ch o1chs                              // use semi-hosting for debug
-// #define ostr ostrs

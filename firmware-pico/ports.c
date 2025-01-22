@@ -35,54 +35,57 @@ static void i2c_reset(i2c_inst_t*i2c) {
   sda=i2c==i2c0?PIN_I2C0_SDA:PIN_I2C1_SDA;
   scl=i2c==i2c0?PIN_I2C0_SCL:PIN_I2C1_SCL;
   gpio_init(sda); gpio_pull_up(sda);
-  gpio_init(scl); gpio_set_dir(scl,1); gpio_put(scl,1); // force clock high
+  gpio_init(scl); gpio_set_dir(scl,1); gpio_put(scl,1);    // force clock high
   for(i=0;i<9;i++) {
     wait_ticks(2);
-    gpio_put(scl,0); // generate a pulse on SCL
+    gpio_put(scl,0);                                       // generate a pulse on SCL
     wait_ticks(2);
     gpio_put(scl,1);
     }
-  gpio_set_dir(sda,1); gpio_put(sda,1); // SDA high
+  gpio_set_dir(sda,1); gpio_put(sda,1);                    // SDA high
   wait_ticks(2);
-  gpio_put(scl,0); // generate a rising edge on SCL with SDA high = STOP condition
+  gpio_put(scl,0);                                         // generate a rising edge on SCL with SDA high = STOP condition
   wait_ticks(2);
   gpio_put(scl,1);
-  i2c_init(i2c,400000);
+  i2c_init(i2c,400000);                                    // reset interface
   gpio_init(sda); gpio_set_function(sda,GPIO_FUNC_I2C); gpio_pull_up(sda);
   gpio_init(scl); gpio_set_function(scl,GPIO_FUNC_I2C); gpio_pull_up(scl);
-  wait_ticks(10); // delay before retry
+  wait_ticks(10);                                          // delay before retry
   }
 
+// wrapper for SDK function incorporating retries and reset
 static int i2c_write(i2c_inst_t*i2c,int add,const uint8_t*src,size_t len,bool nostop) {
   int i,j,u;
-  for(j=0;;j++) {   // three tries, then attempt a reset, then one more try
-    for(i=0;i<3;i++) { // up to 3 tries the first time
+  for(j=0;;j++) {                                           // three tries, then attempt a reset, then one more try
+    for(i=0;i<3;i++) {                                      // up to 3 tries the first time
       u=i2c_write_timeout_us(i2c,add,src,len,nostop,10000); // allow 10ms timeout
       if(u==len) return u;
       if(u==PICO_ERROR_GENERIC) { ostr("<generic I²C bus error>"); }
       if(u==PICO_ERROR_TIMEOUT) { ostr("<I²C bus timeout>"      ); }
-      if(j) return u; // give up and return an error code if we have already tried resetting
-      wait_ticks(10); // delay before retry
+      if(j) return u;                                       // give up and return an error code if we have already tried resetting
+      wait_ticks(10);                                       // delay before retry
       }
     i2c_reset(i2c);
     }
   }
 
+// wrapper for SDK function incorporating retries and reset
 static int i2c_read(i2c_inst_t*i2c,int add,uint8_t*dst,size_t len,bool nostop) {
   int i,j,u;
-  for(j=0;;j++) {   // three tries, then attempt a reset, then one more try
-    for(i=0;i<3;i++) { // up to 3 tries the first time
+  for(j=0;;j++) {                                           // three tries, then attempt a reset, then one more try
+    for(i=0;i<3;i++) {                                      // up to 3 tries the first time
       u=i2c_read_timeout_us (i2c,add,dst,len,nostop,10000); // allow 10ms timeout
       if(u==len) return u;
       if(u==PICO_ERROR_GENERIC) { ostr("<generic I²C bus error>"); }
       if(u==PICO_ERROR_TIMEOUT) { ostr("<I²C bus timeout>"      ); }
-      if(j) return u; // give up and return an error code if we have already tried resetting
-      wait_ticks(10); // delay before retry
+      if(j) return u;                                       // give up and return an error code if we have already tried resetting
+      wait_ticks(10);                                       // delay before retry
       }
     i2c_reset(i2c);
     }
   }
 
+// read a byte from register b on port p
 static int port_readi2cbyte(int p,int b) {
   UC t;
   t=b;
@@ -91,16 +94,19 @@ static int port_readi2cbyte(int p,int b) {
   return t;
   }
 
+// write a byte d to register r on port p
 static inline void port_setreg(int p,int r,int d) {
   UC t[2]={r,d};
   i2c_write(porthw[p].i2c,porthw[p].i2c_add,t,2,0);
   }
 
+// write two bytes d0, d1 to register r, r+1 on port p
 static inline void port_set2reg(int p,int r,int d0,int d1) {
   UC t[3]={r,d0,d1};
   i2c_write(porthw[p].i2c,porthw[p].i2c_add,t,3,0);
   }
 
+// dump all registers of driver IC on port pn
 void port_driverdump(int pn) {
   int j;
   for(j=0;j<DRIVERBYTES;j++) {
@@ -118,36 +124,20 @@ static void accel_setreg(int r,int d) {
   i2c_write_timeout_us(ACCEL_I2C,ACCEL_I2C_ADD,t,2,0,10000); // allow 10ms timeout
   }
 
-// static void accel_read(int r,UC*b,int n) {
-//   UC t[1]={r};
-//   i2c_write(ACCEL_I2C,ACCEL_I2C_ADD,t,1,0);
-//   i2c_read(ACCEL_I2C,ACCEL_I2C_ADD,b,n,0);
-//   }
-// 
-// // return XYZ accelerations in Q16 format
-// void accel_getaxyz(int*ax,int*ay,int*az) {
-//   UC t[6];
-//   int a;
-//   accel_read(0x28,t,6);
-//   a=((int)(signed char)t[1]<<10)+((unsigned int)t[0]<<2); if(ax) *ax=a;
-//   a=((int)(signed char)t[3]<<10)+((unsigned int)t[2]<<2); if(ay) *ay=a;
-//   a=((int)(signed char)t[5]<<10)+((unsigned int)t[4]<<2); if(az) *az=a;
-//   }
-
 void init_accel() {
-  accel_setreg(0x10,0x60); // enable accelerometer
-  accel_setreg(0x11,0x60); // enable gyroscope
-  accel_setreg(0x12,0x34); // make IRQ pin open drain
+  accel_setreg(0x10,0x60);                       // enable accelerometer
+  accel_setreg(0x11,0x60);                       // enable gyroscope
+  accel_setreg(0x12,0x34);                       // make IRQ pin open drain
   }
 
 // ======================================= LPF2 PORTS ===================================
 
 static inline void port_set_pwmflags(int p,int f) {
-  port_setreg(p,0x4C,f);
+  port_setreg(p,0x4C,f);                         // set flag bits in PWM driver
   }
 
 static inline void port_set_pwmamount(int p,int a) {
-  port_set2reg(p,0xA1,a,0x01);  // set PWM0 initial duty cycle value [7:0]; set I2C trigger for PWM0 to Update duty cycle value
+  port_set2reg(p,0xA1,a,0x01);                   // set PWM0 initial duty cycle value [7:0]; set I2C trigger for PWM0 to Update duty cycle value
   }
 
 // set PWM values as integer
@@ -156,15 +146,10 @@ static void port_set_pwm_int(int pn,int pwm) {
   int lpwm=q->lastpwm;
   if(pwm==lpwm) return;
   q->lastpwm=pwm;
-//  if(pwm==0) {
-//    port_set_pwmflags(pn,0x6f); // disable PWM
-//    port_set_pwmamount(pn,1); // minimum amount
-//    return;
-//    }
-  if(ABS(lpwm)>ABS(pwm)) port_set_pwmamount(pn,ABS(pwm)); // amount reducing in absolute terms? then set it first
-  if(pwm< 0&&(lpwm>=0||lpwm==0x7fffffff)) port_set_pwmflags(pn,0x5f); // enable, -ve direction
-  if(pwm>=0&&(lpwm<=0||lpwm==0x7fffffff)) port_set_pwmflags(pn,0x7f); // enable, +ve direction
-  if(ABS(lpwm)<=ABS(pwm)) port_set_pwmamount(pn,ABS(pwm)); // amount increasing in absolute terms? then set it last
+  if(ABS(lpwm)>ABS(pwm)) port_set_pwmamount(pn,ABS(pwm));                      // amount decreasing in absolute terms? then set it first
+  if(pwm< 0&&(lpwm>=0||lpwm==0x7fffffff)) port_set_pwmflags(pn,0x5f);          // enable, -ve direction
+  if(pwm>=0&&(lpwm<=0||lpwm==0x7fffffff)) port_set_pwmflags(pn,0x7f);          // enable, +ve direction
+  if(ABS(lpwm)<=ABS(pwm)) port_set_pwmamount(pn,ABS(pwm));                     // amount increasing in absolute terms? then set it last
   }
 
 // set PWM values according to pwm:
@@ -175,27 +160,29 @@ static void port_set_pwm_int(int pn,int pwm) {
 void port_set_pwm(int p,float pwm) {
   int u,v;
   CLAMP(pwm,-1,1);
-  u=((int)(pwm*131072)+1)/2; // rounded Q16
-  if(ABS(u)<portinfo[p].minpwm) u=0; // don't try to generate tiny PWM values
+  u=((int)(pwm*131072)+1)/2;                // convert to rounded Q16
+  if(ABS(u)<portinfo[p].minpwm) u=0;        // don't try to generate tiny PWM values
   if(ABS(u)>=portinfo[p].pwmthresh) v=u;    // if above slow/fast PWM switchover threshold, send value directly to PWM driver
   else {
     portinfo[p].pwmthreshacc+=u;            // enable PWM drivers at the threshold level at the correct average rate ("slow PWM")
     if     (portinfo[p].pwmthreshacc>= portinfo[p].pwmthresh) v= portinfo[p].pwmthresh;
     else if(portinfo[p].pwmthreshacc<=-portinfo[p].pwmthresh) v=-portinfo[p].pwmthresh;
-    else                                            v=0;
+    else                                                      v=0;
     portinfo[p].pwmthreshacc-=v;
     }
   CLAMP(v,-portinfo[p].pwm_drive_limit,portinfo[p].pwm_drive_limit);
-  v=(v*PWM_PERIOD+PWM_PERIOD/2)>>16; // map to ±PWM_PERIOD
+  v=(v*PWM_PERIOD+PWM_PERIOD/2)>>16;        // map to ±PWM_PERIOD
   port_set_pwm_int(p,v);
   }
 
+// set motor to coast
 void port_motor_coast(int pn) {
-  port_set_pwmflags(pn,0x6f); // disable PWM
-  port_set_pwmamount(pn,1); // minimum amount
+  port_set_pwmflags(pn,0x6f);                    // disable PWM
+  port_set_pwmamount(pn,1);                      // minimum amount
   portinfo[pn].lastpwm=0x7fffffff;
   }
 
+// initialise scaled variable
 static void initsvar(struct svar*sv) {
   sv->port=0;
   sv->mode=0;
@@ -203,16 +190,17 @@ static void initsvar(struct svar*sv) {
   sv->format=0;
   sv->scale=0;
   sv->unwrap=0;
-  sv->last=1.1e38; // values overr 1e38 flag that there is no valid "last" reading
+  sv->last=1.1e38;                               // values overr 1e38 flag that there is no valid "last" reading
   }
 
+// initialise all PWM variables
 void port_initpwm(int pn) {
   struct portinfo*q=portinfo+pn;
   port_set_pwm_int(pn,0);
   q->pwmmode=0;
-  q->pwm_drive_limit=6554; // 0.1 Q16
+  q->pwm_drive_limit=6554;                       // 0.1 Q16
   q->coast=0;
-  q->lastpwm=0x7fffffff; // dummy value
+  q->lastpwm=0x7fffffff;                         // dummy value
   q->pwmthresh=0;
   q->pwmthreshacc=0;
   q->minpwm=0;
@@ -235,7 +223,7 @@ void port_initpwm(int pn) {
   q->deadzone=0;
   }
 
-// GPIO5 -> b0, GPIO6 -> b1
+// get state of GPIO5 in bit 0, GPIO6 in bit 1
 unsigned int port_state56(int p) {
   unsigned int u;
   u=port_readi2cbyte(p,0x4b);
@@ -243,18 +231,21 @@ unsigned int port_state56(int p) {
   return u;
   }
 
+// reset driver IC
 void port_resetdriver(int p) {
   port_setreg(p,0xf5,0x01);
   }
 
+// clear all fault flags
 void port_clearfaults() {
   int i;
   for(i=0;i<NPORTS;i++) {
-    port_setreg(i,0x4C,0x70); // clear fault flags
-    port_setreg(i,0x4C,0x7F); // enable fault flags
+    port_setreg(i,0x4C,0x70);                    // clear fault flags
+    port_setreg(i,0x4C,0x7F);                    // enable fault flags
     }
   }
 
+// check for motor faults
 void port_checkmfaults() {
   int i,p;
   UC t[NPORTS*3];
@@ -264,7 +255,7 @@ void port_checkmfaults() {
     if(i2c_write(porthw[p].i2c,porthw[p].i2c_add,&r   ,1,0)==-2) goto err;
     if(i2c_read (porthw[p].i2c,porthw[p].i2c_add,t+p*3,3,0)==-2) goto err;
     }
-  ostrnl(" Port 4D 4E 4F");
+  ostrnl(" Port 4D 4E 4F");                      // dump all the fault flags
   for(p=0;p<NPORTS;p++) {
     ostr("   "); odec(p); ostr(" ");
     for(i=0;i<3;i++) {
@@ -280,59 +271,49 @@ err:
 
 void port_initdriver(int p) {
   port_setreg(p,0x6A,0x00);
-  port_setreg(p,0x6B,0x00); // disable pull-ups/downs on GPIO5/6
-//  port_setreg(p,0x67,0x6A);
-//  port_setreg(p,0x68,0x15); // enable 10kΩ pull-ups and Schmitt triggers on SCL, SDA !!!
-  port_setreg(p,0x97,0x01); // fault signal
-  port_setreg(p,0x98,0x00); // fault signal
-  port_setreg(p,0x5C,0x20); // set PWM0 Period CLK to OSC1 Flex-Div
-  port_setreg(p,0x5D,0x03); // set OSC1 Flex-Div to 4
-  port_setreg(p,0x9D,0x0E); // set 2-bit LUT2 Logic to OR
-  port_setreg(p,0x18,0x3C); // bits 5..0 Matrix OUT 33 IN0 LUT2_2 OCP FAULT) 7..6 below 
-  port_setreg(p,0x19,0x7A); // connection 2-bit LUT2 IN1 to I2C OUT7  Connection 2-bit LUT2 IN0 to PWM0 OUT+
-  port_setreg(p,0x1A,0x06); // 7..2 Matrix out 33 DFF3 clk to LUT2_0 out  1:0 above
+  port_setreg(p,0x6B,0x00);            // disable pull-ups/downs on GPIO5/6
+  port_setreg(p,0x97,0x01);            // fault signal
+  port_setreg(p,0x98,0x00);            // fault signal
+  port_setreg(p,0x5C,0x20);            // set PWM0 Period CLK to OSC1 Flex-Div
+  port_setreg(p,0x5D,0x03);            // set OSC1 Flex-Div to 4
+  port_setreg(p,0x9D,0x0E);            // set 2-bit LUT2 Logic to OR
+  port_setreg(p,0x18,0x3C);            // bits 5..0 Matrix OUT 33 IN0 LUT2_2 OCP FAULT) 7..6 below 
+  port_setreg(p,0x19,0x7A);            // connection 2-bit LUT2 IN1 to I2C OUT7  Connection 2-bit LUT2 IN0 to PWM0 OUT+
+  port_setreg(p,0x1A,0x06);            // 7..2 Matrix out 33 DFF3 clk to LUT2_0 out  1:0 above
   
-  port_setreg(p,0x92,0xc5); // LUT2_3 values
-  port_setreg(p,0x15,0xF2); // 5..0 Matrix OUT28 IN1 LUT2_0 to Fault_A , 7..6 below
-  port_setreg(p,0x16,0x0B); // 3..0 Matrix OUT29 IN0 LUT2_3 to ACMP1H , 7..4 next byte ( GND)
-  port_setreg(p,0x21,0x44); // 7..2 Matrix out 33 DFF3 clk to LUT2_0 out  1:0 above
+  port_setreg(p,0x92,0xc5);            // LUT2_3 values
+  port_setreg(p,0x15,0xF2);            // 5..0 Matrix OUT28 IN1 LUT2_0 to Fault_A , 7..6 below
+  port_setreg(p,0x16,0x0B);            // 3..0 Matrix OUT29 IN0 LUT2_3 to ACMP1H , 7..4 next byte ( GND)
+  port_setreg(p,0x21,0x44);            // 7..2 Matrix out 33 DFF3 clk to LUT2_0 out  1:0 above
   
-  port_setreg(p,0x2A,0xBE); // Make Fault Pin sourced from live inputs instead of latched inputs
-  port_setreg(p,0x2B,0x10); // 
-  port_setreg(p,0x2C,0x10); // 
+  port_setreg(p,0x2A,0xBE);            // make fault pin sourced from live inputs instead of latched inputs
+  port_setreg(p,0x2B,0x10);            // 
+  port_setreg(p,0x2C,0x10);            // 
   
-  port_setreg(p,0x42,0xC0); // Pulse delay input from 2bit LUT2 OUT
-  port_setreg(p,0x9A,0x20); // Rising edge, 486ns pulse
+  port_setreg(p,0x42,0xC0);            // pulse delay input from 2bit LUT2 OUT
+  port_setreg(p,0x9A,0x20);            // rising edge, 486ns pulse
   
-  port_setreg(p,0x6D,0x1E); // enable OCP blanking for HV OUT 1
-  port_setreg(p,0x09,0x03); // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
-  port_setreg(p,0x0C,0x0F); // connection HV OUT CTRL1 EN Input via pulse delay
-  port_setreg(p,0x0A,0x60); // enable slow decay mode
-  port_setreg(p,0x0D,0x60); //
-  port_setreg(p,0x3C,0x16); // connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
-  port_setreg(p,0xB6,0x09); // set PWM0 to flex-Div clock
-  port_setreg(p,0x4C,0x70); // clear fault flags
-  port_setreg(p,0x4C,0x7F); // enable fault flags
+  port_setreg(p,0x6D,0x1E);            // enable OCP blanking for HV OUT 1
+  port_setreg(p,0x09,0x03);            // connection HV OUT CTRL0 EN Input to 2-bit LUT2 OUT
+  port_setreg(p,0x0C,0x0F);            // connection HV OUT CTRL1 EN Input via pulse delay
+  port_setreg(p,0x0A,0x60);            // enable slow decay mode
+  port_setreg(p,0x0D,0x60);            //
+  port_setreg(p,0x3C,0x16);            // connection PWM0 PWR DOWN Input to 3-bit LUT9 OUT
+  port_setreg(p,0xB6,0x09);            // set PWM0 to flex-Div clock
+  port_setreg(p,0x4C,0x70);            // clear fault flags
+  port_setreg(p,0x4C,0x7F);            // enable fault flags
   }
 
-//void port_setpin6(int p,int s) {
-//  UC t[3]={0x07,driverdata[pn][0x07],driverdata[pn][0x08]};
-//  t[2]=0; t[1]&=0x0f;
-//  switch(s) {
-//case 0: t[2]|=0xfc; t[1]|=0x00; break;
-//case 1: t[2]|=0x00; t[1]|=0x00; break;
-//case 2: t[2]|=0xff; t[1]|=0xf0; break;
-//    }
-//  port_i2c_write(p,t,3,0);
-//  }
-
+// use a single ISR for all the port UARTs
 static void port_uart_irq(int pn);
 
+// each port UART ISR calls the common ISR with an argument
 static void port0_uart_irq() { port_uart_irq(0); }
 static void port1_uart_irq() { port_uart_irq(1); }
 static void port2_uart_irq() { port_uart_irq(2); }
 static void port3_uart_irq() { port_uart_irq(3); }
 
+// for PIO state machines
 static int txprogoffset0,rxprogoffset0;
 static int txprogoffset1,rxprogoffset1;
 
@@ -362,14 +343,12 @@ void init_ports() {
   gpio_pull_up(PIN_I2C1_SDA);
   gpio_pull_up(PIN_I2C1_SCL);
   for(i=0;i<NPORTS;i++) {
-    mqhead[i]=mqtail[i]=0;
+    mqhead[i]=mqtail[i]=0;                         // empty message queue
     p=porthw+i;
     gpio_init(p->pin_rts); gpio_set_dir(p->pin_rts,1); gpio_put(p->pin_rts,0);
     gpio_init(p->pin_dio); gpio_set_dir(p->pin_dio,0);
     gpio_init(p->pin_rx ); gpio_set_dir(p->pin_rx ,0);
     gpio_init(p->pin_tx ); gpio_set_dir(p->pin_tx ,0);
-//    padsbank0_hw->io[p->pin_rx]&=~0x30; // drive strength 2mA
-//    padsbank0_hw->io[p->pin_tx]&=~0x30;
     portinfo[i].selmode=-1;
     portinfo[i].selreprate=-2;
     }
@@ -380,21 +359,6 @@ void init_ports() {
 #endif
 
   wait_ticks(100);
-//  ostrnl("Checking I²C0:");
-//  for(i=0x08;i<0x80;i++) {
-//    unsigned char t;
-//    if(i%8==0) { o2hex(i); osp(); }
-//    if(i2c_read_blocking(i2c0,i,&t,1,0)==-2) o1ch('.'); else o1ch('+'); osp();
-//    if(i%8==7) onl();
-//    }
-//  ostrnl("Checking I²C1:");
-//  for(i=0x08;i<0x80;i++) {
-//    if(i%8==0) { o2hex(i); osp(); }
-//    unsigned char t;
-//    if(i2c_read_blocking(i2c1,i,&t,1,0)==-2) o1ch('.'); else o1ch('+'); osp();
-//    if(i%8==7) onl();
-//    }
-
   ostr("Resetting drivers: ");
   for(i=0;i<NPORTS;i++) {
     odec(i);
@@ -408,11 +372,6 @@ void init_ports() {
     odec(i);
     for(j=0;j<DRIVERBYTES;j++) {
       driverdata[i][j]=port_readi2cbyte(i,j);
-//      if(i==0) {
-//        o2hex(driverdata[i][j]);
-//        if(j%16==15) onl();
-//        else         osp();
-//        }
       }
     }
   onl();
@@ -424,15 +383,11 @@ void init_ports() {
     odec(i);
     for(j=0;j<DRIVERBYTES;j++) {
       driverdata[i][j]=port_readi2cbyte(i,j);
-//      if(i==0) {
-//        o2hex(driverdata[i][j]);
-//        if(j%16==15) onl();
-//        else         osp();
-//        }
       }
     }
   onl();
 
+// configure PIOs for port UARTs
   pio_clear_instruction_memory(pio0);
   pio_clear_instruction_memory(pio1);
 
@@ -445,73 +400,18 @@ void init_ports() {
      ostrnl("Assertion failed");
      exit(16);
      }
-//  o2hex(txprogoffset0); osp(); o2hex(rxprogoffset0); onl();
-//  o2hex(txprogoffset1); osp(); o2hex(rxprogoffset1); onl();
-
   irq_set_exclusive_handler(PIO0_IRQ_0,port0_uart_irq);
   irq_set_exclusive_handler(PIO0_IRQ_1,port1_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_0,port2_uart_irq);
   irq_set_exclusive_handler(PIO1_IRQ_1,port3_uart_irq);
 
   for(i=0;i<NPORTS;i++) port_initpwm(i);
-//  // test for PWM glitches
-//  for(;;) {
-//    for(i=2;i<4;i++) {
-//      port_set_pwm_int(1,i);
-//      wait_ticks(2);
-//      o1ch('.');
-//      }
-//    }
-
-
-//  for(j=0;j<20;j++) {
-//    struct porthw*p=porthw+1;
-//    int s=0,u;
-//
-//    for(i=0;i<4;i++) {
-//      gpio_put(PIN_DEBUG0,i==0);
-//      gpio_set_dir(p->pin_tx,0);
-//      gpio_disable_pulls(p->pin_tx);
-//      switch(i) {
-//    case 0: gpio_set_dir(p->pin_rx,1); gpio_put(p->pin_rx,0);     break;
-//    case 1: gpio_set_dir(p->pin_rx,0); gpio_pull_down(p->pin_rx); break;
-//    case 2: gpio_set_dir(p->pin_rx,0); gpio_pull_up(p->pin_rx);   break;
-//    case 3: gpio_set_dir(p->pin_rx,1); gpio_put(p->pin_rx,1);     break;
-//        }
-//      wait_ticks(10);
-//      u=port_state56(1);
-//      if(u&1) s|=0x0001<<i;
-//      if(u&2) s|=0x0100<<i;
-//      }
-//
-//    for(i=0;i<4;i++) {
-//      gpio_set_dir(p->pin_rx,0);
-//      gpio_disable_pulls(p->pin_rx);
-//      switch(i) {
-//    case 0: gpio_set_dir(p->pin_tx,1); gpio_put(p->pin_tx,0);     break;
-//    case 1: gpio_set_dir(p->pin_tx,0); gpio_pull_down(p->pin_tx); break;
-//    case 2: gpio_set_dir(p->pin_tx,0); gpio_pull_up(p->pin_tx);   break;
-//    case 3: gpio_set_dir(p->pin_tx,1); gpio_put(p->pin_tx,1);     break;
-//        }
-//      wait_ticks(10);
-//      u=port_state56(1);
-//      if(u&1) s|=0x0010<<i;
-//      if(u&2) s|=0x1000<<i;
-//      }
-//
-//    o4hex(s); onl();
-//    if(j==10) {
-//      port_uarton(1);
-//      port_uartoff(1);
-//      onl();
-//      }
-//    }
-
   ostrnl("Done initialising ports");
   }
 
 // ========================== LPF2 port UARTs and ISRs =========================
 
+// set the baud rate on a port UART
 void port_setbaud(int pn,int baud) {
   struct porthw*p=porthw+pn;
   if(baud<  2400) baud=  2400;
@@ -536,17 +436,17 @@ void port_uarton(int pn) {
   int txp=p->pin_tx;
   int rxp=p->pin_rx;
   pio_sm_config c;
-  float div=(float)clock_get_hz(clk_sys)/(8*2400);   // SMs transmit 1 bit per 8 execution cycles; dummy baud rate
+  float div=(float)clock_get_hz(clk_sys)/(8*2400);         // SMs transmit 1 bit per 8 execution cycles; dummy baud rate
 
 // TX init
-  pio_sm_set_pins_with_mask(pio,tsm,1<<txp,1<<txp);    // tell PIO to initially drive output-high on the selected pin, then map PIO
-  pio_sm_set_pindirs_with_mask(pio,tsm,1<<txp,1<<txp); // onto that pin with the IO muxes
+  pio_sm_set_pins_with_mask(pio,tsm,1<<txp,1<<txp);        // tell PIO to initially drive output-high on the selected pin, then map PIO
+  pio_sm_set_pindirs_with_mask(pio,tsm,1<<txp,1<<txp);     // onto that pin with the IO muxes
   pio_gpio_init(pio,txp);
   c=uart_tx_program_get_default_config(txprogoffset0);
-  sm_config_set_out_shift(&c,true,false,32);          // OUT shifts to right, no autopull
+  sm_config_set_out_shift(&c,true,false,32);               // OUT shifts to right, no autopull
 
-  sm_config_set_out_pins(&c, txp, 1);   // we map both OUT and side-set to the same pin, because sometimes we need to assert
-  sm_config_set_sideset_pins(&c, txp);  // user data onto the pin (with OUT) and sometimes constant values (start/stop bit)
+  sm_config_set_out_pins(&c, txp, 1);                      // we map both OUT and side-set to the same pin, because sometimes we need to assert
+  sm_config_set_sideset_pins(&c, txp);                     // user data onto the pin (with OUT) and sometimes constant values (start/stop bit)
   sm_config_set_clkdiv(&c,div);
 
   pio_sm_init(pio,tsm,txprogoffset0,&c);
@@ -558,12 +458,12 @@ void port_uarton(int pn) {
   gpio_pull_up(rxp);
 
   c=uart_rx_program_get_default_config(rxprogoffset0);
-  sm_config_set_in_pins(&c,rxp); // for WAIT, IN
-  sm_config_set_jmp_pin(&c,rxp); // for JMP
-  sm_config_set_in_shift(&c, true, false, 32); // shift to right, autopull disabled
+  sm_config_set_in_pins(&c,rxp);                           // for WAIT, IN
+  sm_config_set_jmp_pin(&c,rxp);                           // for JMP
+  sm_config_set_in_shift(&c, true, false, 32);             // shift to right, autopull disabled
   sm_config_set_clkdiv(&c,div);
 
-  q->mstate=MS_NOSYNC;
+  q->mstate=MS_NOSYNC;                                     // initialise message processing variables
   q->lasttick=gettick();
   q->framingerrors=0;
   q->checksumerrors=0;
@@ -571,16 +471,17 @@ void port_uarton(int pn) {
   q->txlen=0;
 
   pio_sm_init(pio,rsm,rxprogoffset0,&c);
-  switch(pn) { //!!! this is not very elegant
-case 0:pio0->inte0=0x12; break;
-case 1:pio0->inte1=0x48; break;
-case 2:pio1->inte0=0x12; break;
-case 3:pio1->inte1=0x48; break;
+  switch(pn) {                                             // configure interrupts
+case 0: pio0->inte0=0x12; break;
+case 1: pio0->inte1=0x48; break;
+case 2: pio1->inte0=0x12; break;
+case 3: pio1->inte1=0x48; break;
     }
   pio_sm_set_enabled(pio,rsm,true);
   irq_set_enabled(p->irq,1);
   }
 
+// switch off UART for a port
 void port_uartoff(int pn) {
   struct porthw*p=porthw+pn;
   struct portinfo*q=portinfo+pn;
@@ -595,16 +496,17 @@ void port_uartoff(int pn) {
   gpio_init(txp); gpio_set_dir(txp,0);
   gpio_init(rxp); gpio_set_dir(rxp,0);
   irq_set_enabled(p->irq,0);
-  switch(pn) { //!!! this is not very elegant
-case 0:pio0->inte0=0; break;
-case 1:pio0->inte1=0; break;
-case 2:pio1->inte0=0; break;
-case 3:pio1->inte1=0; break;
+  switch(pn) {
+case 0: pio0->inte0=0; break;
+case 1: pio0->inte1=0; break;
+case 2: pio1->inte0=0; break;
+case 3: pio1->inte1=0; break;
     }
   q->mstate=MS_NOSYNC;
   q->txptr=-2;
   }
 
+// wait for a character to be received on a port
 int port_waitch(int pn) {
   struct porthw*p=porthw+pn;
   PIO pio=p->pio;
@@ -613,6 +515,7 @@ int port_waitch(int pn) {
   return (int)*((io_rw_8*)&pio->rxf[rsm]+3);
   }
 
+// port UART common ISR
 static void port_uart_irq(int pn) {
   struct porthw*p=porthw+pn;
   struct portinfo*q=portinfo+pn;
@@ -622,126 +525,120 @@ static void port_uart_irq(int pn) {
   struct message*m=messages+pn;
   int b,i,f0,f1,f2;
 
-  if(!pio_sm_is_tx_fifo_full(pio,tsm)) {
+  if(!pio_sm_is_tx_fifo_full(pio,tsm)) {                   // can we send something?
     if(q->txptr>=0) {
-      pio_sm_put_blocking(pio,tsm,q->txbuf[q->txptr++]); // send next character
-      if(q->txptr==q->txlen) {                     // finished?
+      pio_sm_put_blocking(pio,tsm,q->txbuf[q->txptr++]);   // send next character if any
+      if(q->txptr==q->txlen) {                             // finished?
         q->txptr=-1;
-        *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt now
+        *p->inte=p->intb&PORT_INTE_RXMASK;                 // keep only receive interrupt enabled now
         }
       }
     else
-      *p->inte=p->intb&PORT_INTE_RXMASK;     // only enable receive interrupt now
+      *p->inte=p->intb&PORT_INTE_RXMASK;                   // keep only receive interrupt enabled now
     }
-//!!!  if(s&0x02) {                                     // framing error? this detects break condition
-//!!!    q->framingerrors++;
-//!!!DEB_SER    ostrnl("*FrE*");
-//!!!    b=u->DR;                                       // clear framing error
-//!!!    q->mstate=MS_MTYPE;
-//!!!    return;
-//!!!    }
-  if(!pio_sm_is_rx_fifo_empty(pio,rsm)) {         // RX not empty?
-    b=(int)*((io_rw_8*)&pio->rxf[rsm]+3);           // get byte
-    m->check^=b;                                   // accumulate checksum
+
+  if(!pio_sm_is_rx_fifo_empty(pio,rsm)) {                  // RX not empty?
+    b=(int)*((io_rw_8*)&pio->rxf[rsm]+3);                  // get byte
+    m->check^=b;                                           // accumulate checksum
   DEB_SER  o2hex(b);
     switch(q->mstate) {
   case MS_NOSYNC:
   DEB_SER    o1ch('n');
-      if(gettick()-q->lasttick<100) break;              // wait for a pause
+      if(gettick()-q->lasttick<100) break;                 // wait for a pause
       q->mstate=MS_MTYPE;
       // and fall through
   case MS_MTYPE:
   DEB_SER    o1ch('t');
-      m->check=b;                                  // initialise checksum
-      f0=(b>>6)&3;                                 // split byte into three fields
+      m->check=b;                                          // initialise checksum
+      f0=(b>>6)&3;                                         // split byte into three fields
       f1=(b>>3)&7;
       f2=(b>>0)&7;
-      m->type=b&0xc7;
+      m->type=b&0xc7;                                      // extract type
       m->cmd=0;
       m->mode=0;
       m->plen=0;
-      switch(f0) {                                 // examine top two bits
-    case 0:                                        // "system message"
+      switch(f0) {                                         // examine top two bits
+    case 0:                                                // "system message"
         switch(f2) {
       case 0:
       case 1:
-      case 2: // NACK
+      case 2:                                              // NACK
       case 3:
       case 6:
       case 7:
-          break;                                   // SYNC-type messages ignored
-      case 4: // ACK
+          break;                                           // SYNC-type messages ignored
+      case 4:                                              // ACK
   DEB_SER        ostr("ACK");
           m->check=0xff;
           goto complete;
-      case 5: // PRG
+      case 5:                                              // PRG
           m->plen=1<<f1;
           q->mstate=MS_CMD;
           break;
           }
         break;
-    case 1:                                        // "command message"
+    case 1:                                                // "command message"
         m->plen=1<<f1;
-        q->mstate=MS_PAYLOAD;                      // no extra command byte in this case
+        q->mstate=MS_PAYLOAD;                              // no extra command byte in this case
         break;
-    case 2:                                        // "info message"
-        m->mode=m->type&7;                         // move mode bits to "mode"
+    case 2:                                                // "info message"
+        m->mode=m->type&7;                                 // move mode bits to "mode"
         m->type&=~7;
         m->plen=1<<f1;
-        q->mstate=MS_CMD;                          // command byte comes next
+        q->mstate=MS_CMD;                                  // command byte comes next
         break;
-    case 3:                                        // "data message"
-        m->mode=m->type&7;                         // move mode bits to "mode"
+    case 3:                                                // "data message"
+        m->mode=m->type&7;                                 // move mode bits to "mode"
         m->type&=~7;
         m->plen=1<<f1;
-        q->mstate=MS_PAYLOAD;                      // payload comes next
+        q->mstate=MS_PAYLOAD;                              // payload comes next
         break;
         }
       break;
   case MS_CMD:
   DEB_SER    o1ch('c');
       m->cmd=b;
-      m->mode|=(b>>2)&0x08;                        // extended mode bit
+      m->mode|=(b>>2)&0x08;                                // extended mode bit
       q->mstate=MS_PAYLOAD;
       break;
   default:
   DEB_SER    o1ch('p');
-      if(q->mstate<(int)m->plen) {                 // mstate goes from 0 to plen-1 as payload bytes are read
+      if(q->mstate<(int)m->plen) {                         // mstate goes from 0 to plen-1 as payload bytes are read
         m->payload[q->mstate++]=b;
         break;
         }
   complete:
-      // here we have a complete message with checksum incorporated into m->check
+// here we have a complete message with its checksum incorporated into m->check
       if(m->check!=0xff) q->checksumerrors++;
-      else {                                       // if checksum OK add to message queue
+      else {                                               // if checksum OK add to message queue
         i=(mqhead[pn]+1)%MQLEN;
-        if(i!=mqtail[pn]) {                        // discard on overrunning the message queue
+        if(i!=mqtail[pn]) {                                // discard on overrunning the message queue
           memcpy((void*)&mqueue[pn][mqhead[pn]],m,sizeof(struct message));
           mqhead[pn]=i;
         } else {
-          ostrnl("MQ overrun!");                   // !!! consider trapping this
+          ostrnl("MQ overrun!");
           }
         }
-      q->mstate=MS_MTYPE;                          // ready for next message
+      q->mstate=MS_MTYPE;                                  // ready for next message
       break;
       }
     q->lasttick=gettick();
-//    gpio_put(PIN_DEBUG0,0);
     }
   }
 
+// send a message to a given port
 void port_sendmessage(int pn,unsigned char*buf,int l) {
   struct porthw*p=porthw+pn;
   struct portinfo*q=portinfo+pn;
-  if(l<1) return;
+  if(l<1) return;                                          // no message
   if(l>TXBLEN) l=TXBLEN;
-  if(q->txptr==-2) return;                         // UART off? ignore
-  while(q->txptr>=0) ;                             // wait for TX idle
-  memcpy((void*)q->txbuf,buf,l);
+  if(q->txptr==-2) return;                                 // UART off? ignore
+  while(q->txptr>=0) ;                                     // wait for TX idle
+  memcpy((void*)q->txbuf,buf,l);                           // copy message to transmit buffer
   q->txptr=0;
   q->txlen=l;
-  *p->inte=p->intb;  // both interrupts enabled
-  switch(pn) { //!!! this is not very elegant
+  *p->inte=p->intb;                                        // enable both interrupts
+  switch(pn) {
 case 0:pio0->inte0=0x12; break;
 case 1:pio0->inte1=0x48; break;
 case 2:pio1->inte0=0x12; break;
