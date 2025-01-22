@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+export PICO_SDK_PATH=/home/mo/tempd/pico/pico-sdk-2.1.0/
 echo \#define FWVERSION \"`date +%s ; date -Iseconds`\" >version.h
 pushd build
 cmake ..

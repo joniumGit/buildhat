@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+export PICO_SDK_PATH=/home/mo/tempd/pico/pico-sdk-2.1.0/
 cd build
 make
 # cp -a test.uf2 /media/mo/RPI-RP2/

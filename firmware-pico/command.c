@@ -96,12 +96,12 @@ static int parsesv(struct svar*sv) { // parse a "scaled variable" specification
   float v;
   int w;
   sv->last=1.1e38;
-  if(!parseuint(&u))  goto err; CLAMP(u,0,NPORTS-1);    sv->port=u;
-  if(!parseuint(&u))  goto err; CLAMP(u,0,MAXNMODES-1); sv->mode=u;
-  if(!parseuint(&u))  goto err; CLAMP(u,0,127);         sv->offset=u;
-  if(!parsefmt(&w))   goto err;                         sv->format=w;
-  if(!parsefloat(&v)) goto err; CLAMP(u,-32,32);        sv->scale=v;
-  if(!parsefloat(&v)) goto err;                         sv->unwrap=v;
+  if(!parseuint(&u))  goto err; else { CLAMP(u,0,NPORTS-1);    sv->port=u;   }
+  if(!parseuint(&u))  goto err; else { CLAMP(u,0,MAXNMODES-1); sv->mode=u;   }
+  if(!parseuint(&u))  goto err; else { CLAMP(u,0,127);         sv->offset=u; }
+  if(!parsefmt(&w))   goto err; else {                         sv->format=w; }
+  if(!parsefloat(&v)) goto err; else { CLAMP(u,-32,32);        sv->scale=v;  }
+  if(!parsefloat(&v)) goto err; else {                         sv->unwrap=v; }
   return 1;
 err:
   return 0;
@@ -139,11 +139,11 @@ static int cmd_pid(int diff) {
   float v;
   portinfo[cmdport].setpoint=0;
   if(!parsesv(&portinfo[cmdport].pvsvar)) goto err;
-  if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kp=v;
-  if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Ki=v;
-  if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].Kd=v;
-  if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].windup=v;
-  if(!parsefloat(&v)) goto err;                                            portinfo[cmdport].deadzone=v;
+  if(!parsefloat(&v)) goto err; else portinfo[cmdport].Kp=v;
+  if(!parsefloat(&v)) goto err; else portinfo[cmdport].Ki=v;
+  if(!parsefloat(&v)) goto err; else portinfo[cmdport].Kd=v;
+  if(!parsefloat(&v)) goto err; else portinfo[cmdport].windup=v;
+  if(!parsefloat(&v)) goto err; else portinfo[cmdport].deadzone=v;
   portinfo[cmdport].pwmmode=diff?2:1;                      // enable PID controller
   portinfo[cmdport].coast=0;
   return 0;
