@@ -1,4 +1,4 @@
-= Dependencies
+# Dependencies
 
 In the git "buildhat" directory:
 
@@ -15,7 +15,7 @@ Build the ECC and SHA2 libraries:
   cd ..
 ----
 
-= Creating an image the bootloader can use
+# Creating an image the bootloader can use
 
 Execute
 
@@ -35,7 +35,7 @@ firmware-pico/build/main.bin) that are suitable for uploading to the
 board using the bootloader. Note that this binary is intended to run from
 the RP2040's RAM, and so is not suitable for programming into its flash.
 
-= Generating the signature
+# Generating the signature
 
 Execute
 
