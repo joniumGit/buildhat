@@ -24,7 +24,6 @@ Execute
 ```
   export PICO_SDK_PATH=/path/to/pico/sdk
   cd firmware-pico
-  rm -r build
   mkdir -p build
   cd build
   cmake ..
@@ -48,4 +47,4 @@ Execute
   cd ..
 ```
 
-This creates a file `signature.bin`.
+This creates a file bhbl-pico/`signature.bin`.
