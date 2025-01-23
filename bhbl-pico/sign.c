@@ -76,10 +76,6 @@ int main(int ac,char**av) {
     return 16;
     }
   sha256(imagebuf,image_size,digest);
-//  printf("Image size=%d %02x %02x... %02x %02x\n",image_size,imagebuf[0],imagebuf[0],imagebuf[image_size-2],imagebuf[image_size-1]);
-//  printf("   SHA256:");
-//  for(i=0;i<sizeof(digest);i++) printf(" %02X",digest[i]);
-//  printf("\n");
   i=uECC_sign(privatekey,digest,sizeof(digest),signature,c);
   if(i==0) {
     fprintf(stderr,"Failed to generate signature\n");
