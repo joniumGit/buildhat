@@ -1,9 +1,11 @@
 # Dependencies
 
-In the git "buildhat" directory:
+In the git `buildhat` directory:
 
+```
   git clone https://github.com/kmackay/micro-ecc.git
   git clone https://github.com/ogay/sha2.git
+```
 
 Build the ECC and SHA2 libraries:
 
@@ -30,8 +32,8 @@ Execute
   cd ../..
 ```
 
-This will create files in the firmware-pico/build/ directory (for example
-firmware-pico/build/main.bin) that are suitable for uploading to the
+This will create files in the `firmware-pico/build/` directory (for example
+`firmware-pico/build/main.bin`) that are suitable for uploading to the
 board using the bootloader. Note that this binary is intended to run from
 the RP2040's RAM, and so is not suitable for programming into its flash.
 
@@ -46,4 +48,4 @@ Execute
   cd ..
 ```
 
-This creates a file signature.bin .
+This creates a file `signature.bin`.
