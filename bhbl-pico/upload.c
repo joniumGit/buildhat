@@ -1,3 +1,7 @@
+// Copyright (c) 2025 Raspberry Pi (Trading) Ltd.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

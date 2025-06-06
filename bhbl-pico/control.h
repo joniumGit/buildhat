@@ -1,3 +1,7 @@
+// Copyright (c) 2025 Raspberry Pi (Trading) Ltd.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #define CTRLRXBLEN 4096                            // enough for 10ms of data at 3Mbaud
