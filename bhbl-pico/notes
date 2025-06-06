@@ -95,3 +95,12 @@ a USB serial adapter.
 A simple checksum is used initially to verify the integrity of the uploaded
 image. The signature is then also verified against the public key built
 into the bootloader. Note, however, that the image is not encrypted.
+
+Version update
+--------------
+
+Run
+
+  echo \#define FWVERSION \"`date +%s ; date -Iseconds`\" >version.h
+
+to update version.h .
