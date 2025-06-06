@@ -54,6 +54,15 @@ For changing Duty Cycle:
  1 0xA1 0x00 to 0xFF Set PWM0 Initial Duty Cycle value [7:0]. Default: 0x00
  2 0xA2 0x01 Set I2C trigger for PWM0 to Update duty cycle value
 
+Version update
+==============
+
+Run
+
+  echo \#define FWVERSION \"`date +%s ; date -Iseconds`\" >version.h
+
+to update version.h .
+
 LED Matrix
 ==========
 

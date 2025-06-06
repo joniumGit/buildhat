@@ -1,3 +1,7 @@
+// Copyright (c) 2025 Raspberry Pi (Trading) Ltd.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include "hardware.h"
 
 // pin allocation and other information for each port

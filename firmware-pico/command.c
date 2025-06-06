@@ -1,3 +1,7 @@
+// Copyright (c) 2025 Raspberry Pi (Trading) Ltd.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 // Accept, parse and process commands received over the control port UART
 
 #include "common.h"

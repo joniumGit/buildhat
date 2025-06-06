@@ -1,3 +1,7 @@
+// Copyright (c) 2025 Raspberry Pi (Trading) Ltd.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #define DEBUG_PINS                                 // use MCU_CTS and MCU_RTS as debug signals
