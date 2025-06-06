@@ -31,44 +31,6 @@ GPIO  Block     Use
  28   GPIO/IRQ  nFL (Motor fault) needs pull up
  29   ADC       ADC_VIN = (vin*10/(10+47))
 
-To get Picoprobe to work with udev rule some combination of the following
-works.
-
-root@ear:/etc/udev/rules.d# cat 99-picoprobe.rules
-# Picoprobe
-# ATTRS{idVendor}=="2E8A", ATTRS{idProduct}=="0004", MODE="0666", OWNER="mo", GROUP="mo"
-# ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE="660", GROUP="plugdev", TAG+="uaccess"
-ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE="660", GROUP="plugdev"
-
-root@ear:/etc/udev/rules.d# /etc/init.d/udev restart
-root@ear:/etc/udev/rules.d# udevadm control --reload
-
-Built openocd branch with modified Makefile:
-  prefix = /home/mo/tempd/pico/openocd/usr/local
-instead of
-  prefix = /usr/local
-
-Then can make install as non-root and not write over other modified version
-of openocd we already have in /usr/local.
-
-Now (as non-root) can do
-
-/home/mo/tempd/pico/openocd/usr/local/bin/openocd -f /home/mo/tempd/pico/openocd/usr/local/share/openocd/scripts/interface/picoprobe.cfg -f /home/mo/tempd/pico/openocd/usr/local/share/openocd/scripts/target/rp2040.cfg -s tcl
-
-For bootloader:
-  Standard linker scripts are in pico-sdk/src/rp2_common/pico_standard_link
-  Looks like we can override using a CMAKEism. From pico-sdk/src/rp2_common/pico_standard_link/CMakeLists.txt :
-    # LINKER script will be PICO_TARGET_LINKER_SCRIPT if set on target, or ${CMAKE_CURRENT_LIST_DIR}/memmap_foo.ld
-
-export PICO_SDK_PATH=/home/mo/tempd/pico/pico-sdk/
-
-
-TODO
-Fix GPIO drive strengths
-Test ID margins
-Think about PID control variable from combi mode, alignment problems in device_varfrommode
-Make <selvar> just have values 0, 1, 2, 3 (i.e., only signed char/short/int plus float)
-
 I²C commands:
 
 Initialisation :
@@ -88,25 +50,15 @@ Initialisation :
 
 For changing Duty Cycle:
 
- # Address, hex Data, hex Function
+ # Address, hex Data, Function
  1 0xA1 0x00 to 0xFF Set PWM0 Initial Duty Cycle value [7:0]. Default: 0x00
  2 0xA2 0x01 Set I2C trigger for PWM0 to Update duty cycle value
-
-The your using the old 10bit design with the period reduce by a quarter (
-0x86, 0x3f write ) to give 8 bits
-
-so in port init add the follow I2c write address 0x59 = 0x2A
-
-> You could try setting 0xB6 to 0x19, you may need to set 0x5D to 0x1 to get
-> the PWM frequency back up. 
-
 
 LED Matrix
 ==========
 
 Connect it up and enable power - the polarity doesn't seem to matter
-for this device. Then use a DATA command (not a WRITE command as the
-documentation suggests) as follows:
+for this device. Then use a DATA command as follows:
 
   select 0
   write1 c0 5
@@ -179,16 +131,11 @@ then
 
   select 0
 
-and you will get some numbers - looks like they are colour indices.
+and you will get some numbers which appear to be colour indices.
 
   select 1
 
-gives you something like distance, or it may be reflected intensity.
-
-I'm fairly sure I tried this on the ultrasound sensor too and it
-didn't work. But now it seems to. I have plugged both these
-devices into the Spike hub since then, and I am wondering if
-it has uploaded some code into the device.
+gives you something corresponding to distance or possibly reflected intensity.
 
 Ultrasound sensor
 =================
@@ -214,79 +161,7 @@ from the robot's point of view the values are:
   rr=right-eye-lower
   ss=left-eye-lower
 
-and the numbers can range from 0 to 64 hex (100 decimal). You can
-only get white AFAICT.
-
-
-
->>> m.run_to_position(180,100)
-port 0 ; selonce 0
-port 0 ; selonce 0
- pos 140300 apos 25
- diff 155
- newpos 390.15277777777777
-port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 1 s4 0.0027777778 0 5 0 .1 3
-set ramp 389.72222222222223 390.15277777777777 0.08611111111110858 0
-port 0 ; coast
-
-Then spins forever:
->>> m.run_to_position(0,100)
-port 0 ; selonce 0
-port 0 ; selonce 0
- pos 140455 apos -180
- diff -180
- newpos 389.65277777777777
-port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 1 s4 0.0027777778 0 5 0 .1 3
-set ramp 390.15277777777777 389.65277777777777 0.1 0
-
-set ramp 0 1 1 0
-coast
-
-combi 0 1 0 2 0 3 0 ; select 0 ; pid 0 0 1 s4 0.0027777778 0 5 0 .1 3
-coast
-set ramp 1 2 1 0
-coast
-set ramp 2 1 1 0
-
-Changes in PID_experimental
-===========================
-
-1. New PID parameter
-
-There is a new mandatory parameter at the end of the list of parameters to
-the "pid" (and "pid_diff" - see below) commands called "deadzone", which
-specifies a region around zero where the error is deemed to be zero. This
-can be used to help avoid tiny oscillations when a system is supposed
-to be stable. Previously this was a constant hard-coded into the firmware.
-
-2. New "pid_diff" command
-
-There is a new command "pid_diff" that takes the same arguments as "pid". The new
-command applies a differentiator to the process variable, e.g. converting a position
-sensor into a speed sensor.
-
-3. Change to "bias" command
-
-The bias command has been removed and replaced with "pwmparams" which takes two
-arguments, "pwmthresh" and "minpwm".
-
-The "pwmthresh" parameter specifies a threshold below which the driver
-will switch from "fast PWM" (the previous default) and a new mode
-called "slow PWM" where high-level PWM bursts are generated at a slower
-repetition rate. In this way it is possible to drive the motors reliably,
-if not always very smoothly, at slow speeds as the short bursts are
-better at overcoming static friction in the mechanism.
-
-4. New "set var" command
-
-There is a new "set var" command that allows the set point for a PID controller
-to be derived from a sensor reading from a device possibly connected to another
-port. Thus you can connect the position of a motor to the position of a second
-motor or to a reading from a distance or a light sensor.
-
-5. Comments
-
-A command line starting "#" is ignored.
+and the numbers can range from 0 to 64 hex (100 decimal).
 
 Examples
 ========
@@ -341,4 +216,3 @@ port 0 ; combi 0 1 0 2 0 3 0 ; select 0 ; pwmparams .6 0.01
 pid_diff 0 0 5 s2    0.0027777778 1    0 2.5 0   .4 0.01
 # and M1's position sensor as setpoint
 set var -999999999 999999999 1 0   1 0 5 s2    0.02 0
-
