@@ -75,7 +75,7 @@ void init_control() {
   onl();
   ostrnl("Type help <RETURN> for help");
   cmd_prompt();
-  do wait_ticks(10); while(i1ch()!=-1); // !!!we seem to get a spurious character in the RX buffer at the start
+  do wait_ticks(10); while(i1ch()!=-1); // we seem to get a spurious character in the RX buffer at the start
   }
 
 void deinit_control() {

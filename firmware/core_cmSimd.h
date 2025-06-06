@@ -62,7 +62,7 @@
 
 /*------------------ GNU Compiler ----------------------*/
 #elif defined ( __GNUC__ )
-//  #include "cmsis_gcc.h"   // !!!! commented out 20201027 mo
+//  #include "cmsis_gcc.h"   // commented out 20201027 mo
 
 /*------------------ ICC Compiler ----------------------*/
 #elif defined ( __ICCARM__ )

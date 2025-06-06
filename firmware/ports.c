@@ -289,7 +289,7 @@ DEB_SER    ostrnl("*FrE*");
           memcpy((void*)&mqueue[pn][mqhead[pn]],m,sizeof(struct message));
           mqhead[pn]=i;
         } else {
-          ostrnl("MQ overrun!");                   // !!! consider trapping this
+          ostrnl("MQ overrun!");                   // consider trapping this?
           }
         }
       q->mstate=MS_MTYPE;                          // ready for next message

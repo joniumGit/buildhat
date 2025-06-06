@@ -37,7 +37,7 @@ void device_sendint  (int dn,int b0,int b1,unsigned int   v) { device_sendmessag
 
 // send a 2-part SELECT message that works with extended modes
 void device_sendselect(int d,int m) {
-  device_sendchar(d,0x46,-1,m&0x8);                // MODESET message !!! strictly we should do outgoing message queueing
+  device_sendchar(d,0x46,-1,m&0x8);                // MODESET message; strictly we should do outgoing message queueing
   device_sendchar(d,0x43,-1,m&0x7);                // SELECT message
   }
 
@@ -101,7 +101,7 @@ case 0x80:
       if(m->plen>=2) md->prefmap[0]=m->payload[0],md->prefmap[1]=m->payload[1];
       break;
   case 0x06:
-      // !!! COMBI
+      // COMBI
       break;
   case 0x09:                                       // SPID  (device speed pid constants)
       if(m->plen!=16) goto unhandled;
@@ -128,15 +128,15 @@ case 0x80:
 // unhandled INFO messages
 
   case 0x07:
-      // !!! BIAS  (used in City Train)
+      // BIAS  (used in City Train)
   case 0x08:
-      // !!! UKEY  (device unique key (serial))
+      // UKEY  (device unique key (serial))
   case 0x0B:
-      // !!! PMGMT  (device power management constants)
+      // PMGMT  (device power management constants)
   case 0x0C:
-      // !!! VBIAS  (device voltage bias constants)
+      // VBIAS  (device voltage bias constants)
   case 0xFF:
-      // !!! gets all sensor info
+      // gets all sensor info
   default:
 unhandled:
       o1ch('P'); o1hex(pn);
