@@ -1,1 +1,0 @@
-~/tempd/openocd/openocd-code/src/openocd -s ~/tempd/openocd/openocd-code/tcl/ -f interface/stlink.cfg -f target/stm32f4x.cfg -c"init ; reset halt ; program main.bin 0x08000000 verify ; arm semihosting enable ; reset ; exit "
