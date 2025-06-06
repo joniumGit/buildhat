@@ -1,8 +1,0 @@
-#!/bin/bash
-set -e
-echo \#define BLVERSION \"`date +%s ; date -Iseconds`\" >version.h
-cd build
-cmake ..
-make
-# cp -a test.uf2 /media/mo/RPI-RP2/
-/home/mo/tempd/pico/openocd/usr/local/bin/openocd -f /home/mo/tempd/pico/openocd/usr/local/share/openocd/scripts/interface/picoprobe.cfg -f /home/mo/tempd/pico/openocd/usr/local/share/openocd/scripts/target/rp2040.cfg -c "program main.elf verify reset exit"
