@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "../micro-ecc/uECC.h"
-#include "../sha2/sha2.h"
+#include "uECC.h"
+#include "sha2.h"
 
 typedef unsigned char UC;
 

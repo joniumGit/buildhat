@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "../micro-ecc/uECC.h"
+#include "uECC.h"
 
 typedef unsigned char UC;
 

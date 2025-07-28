@@ -7,8 +7,8 @@
 #include "ioconv.h"
 #include "control.h"
 #include "ports.h"
-#include "../micro-ecc/uECC.h"
-#include "../sha2/sha2.h"
+#include "uECC.h"
+#include "sha2.h"
 #include "key.public.h"
 
 #include "version.h"
